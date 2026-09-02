@@ -1,0 +1,22 @@
+{
+  "name": "neighbourhub",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "db:generate": "cd apps/server && npx prisma generate",
+    "db:push": "cd apps/server && npx prisma db push",
+    "db:migrate": "cd apps/server && npx prisma migrate dev",
+    "db:studio": "cd apps/server && npx prisma studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.5.0"
+  },
+  "packageManager": "pnpm@9.7.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

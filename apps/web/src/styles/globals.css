@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-canvas: #FBFBF9;
+    --color-surface: #FFFFFF;
+    --color-surface-subtle: #F3F4F1;
+    --color-surface-glass: rgba(255, 255, 255, 0.7);
+    --color-border: rgba(0, 0, 0, 0.07);
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #475569;
+    --color-text-tertiary: #94A3B8;
+  }
+
+  .dark {
+    --color-canvas: #0B0F17;
+    --color-surface: #131B2A;
+    --color-surface-subtle: #1B2436;
+    --color-surface-glass: rgba(19, 27, 42, 0.7);
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-text-primary: #F8FAFC;
+    --color-text-secondary: #94A3B8;
+    --color-text-tertiary: #64748B;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-canvas text-text-primary antialiased;
+  }
+
+  * {
+    @apply border-border-hairline;
+  }
+
+  ::selection {
+    @apply bg-brand-500/30 text-text-primary;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.3);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.5);
+  }
+
+  /* Focus visible fallback */
+  :focus-visible {
+    outline: 2px solid theme('colors.brand.500');
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface-glass backdrop-blur-xl border border-border-hairline;
+  }
+  
+  .glass-card {
+    @apply bg-surface-glass backdrop-blur-xl border border-border-hairline rounded-2xl shadow-card;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-600 to-teal-500 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-dark {
+    @apply bg-gradient-to-r from-brand-400 to-teal-300 bg-clip-text text-transparent;
+  }
+}
