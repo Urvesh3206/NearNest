@@ -28,10 +28,11 @@ const DEFAULT_LAT = 37.7749;
 const DEFAULT_LNG = -122.4194;
 const DEFAULT_LOCATION_NAME = "San Francisco, CA";
 
-export default function BusinessesPage() {
+function BusinessesContent() {
   const searchParams = useSearchParams();
   const initialLocation = searchParams.get("location") || "";
   const initialSearch = searchParams.get("search") || "";
+
 
   // Real GPS & Location Coordinates
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number }>({
@@ -1092,3 +1093,12 @@ export default function BusinessesPage() {
     </div>
   );
 }
+
+export default function BusinessesPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-text-secondary">Loading nearby directory...</div>}>
+      <BusinessesContent />
+    </React.Suspense>
+  );
+}
+

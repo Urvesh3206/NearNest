@@ -144,11 +144,12 @@ const PROVIDERS = [
 ];
 
 
-export default function ServicesPage() {
+function ServicesContent() {
   const searchParams = useSearchParams();
   const initialLocation = searchParams.get("location") || "All Locations";
   const initialSearch = searchParams.get("search") || "";
   const initialCategory = searchParams.get("category") || "All";
+
 
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(initialLocation);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
@@ -508,3 +509,12 @@ export default function ServicesPage() {
     </div>
   );
 }
+
+export default function ServicesPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-text-secondary">Loading service providers...</div>}>
+      <ServicesContent />
+    </React.Suspense>
+  );
+}
+
