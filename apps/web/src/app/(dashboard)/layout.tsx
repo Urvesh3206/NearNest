@@ -25,18 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col md:flex-row relative selection:bg-brand-500/30">
-      {/* Background Architectural Layer */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat opacity-[0.04] dark:opacity-[0.08] transition-opacity duration-700"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2000&auto=format&fit=crop')`
-        }}
-      />
-      {/* Ambient Gradient Glows */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-brand-500/10 dark:bg-brand-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-pulse" />
-      <div className="fixed bottom-10 right-10 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-3xl pointer-events-none z-0" />
-
+    <div className="min-h-screen bg-canvas flex flex-col md:flex-row">
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -44,6 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
+
 
 
       {/* Sidebar */}

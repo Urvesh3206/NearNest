@@ -81,9 +81,73 @@ export function Hero() {
   };
 
   return (
-    <section className="relative min-h-[90dvh] flex flex-col items-center justify-center pt-24 pb-16 px-4 overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-500/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+    <section className="relative min-h-[92dvh] flex flex-col items-center justify-center pt-28 pb-20 px-4 overflow-hidden">
+      {/* Real Community Neighborhood Background Image */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-25 dark:opacity-30 pointer-events-none scale-105 transition-transform duration-1000"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2200&auto=format&fit=crop')`,
+          maskImage: 'radial-gradient(ellipse 95% 80% at 50% 45%, black 40%, transparent 95%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 95% 80% at 50% 45%, black 40%, transparent 95%)'
+        }}
+      />
+      
+      {/* Gradient Fog & Vignette */}
+      <div className="absolute inset-0 bg-gradient-to-b from-canvas/80 via-canvas/40 to-canvas z-0 pointer-events-none" />
+
+      {/* Ambient Lighting Orbs */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-brand-500/15 dark:bg-brand-500/20 rounded-full blur-[130px] -z-10 pointer-events-none animate-pulse" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-blue-500/10 rounded-full blur-[110px] -z-10 pointer-events-none" />
+
+      {/* Floating 3D Neighborhood Discovery Badges */}
+      <motion.div 
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        className="hidden lg:flex items-center gap-3 absolute top-36 left-12 p-3.5 bg-surface/85 dark:bg-surface/75 backdrop-blur-xl rounded-2xl border border-border-hairline shadow-float z-10 animate-bounce"
+        style={{ animationDuration: '6s' }}
+      >
+        <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center font-bold text-lg">
+          🏨
+        </div>
+        <div className="text-left pr-2">
+          <p className="text-xs font-bold text-text-primary">The Grand Palace Hotel</p>
+          <p className="text-[11px] text-text-secondary">400 m away • <span className="text-brand-600 font-semibold">₹2,499/night</span></p>
+        </div>
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+        className="hidden lg:flex items-center gap-3 absolute top-48 right-12 p-3.5 bg-surface/85 dark:bg-surface/75 backdrop-blur-xl rounded-2xl border border-border-hairline shadow-float z-10 animate-bounce"
+        style={{ animationDuration: '7s', animationDelay: '1s' }}
+      >
+        <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center font-bold text-lg">
+          🛠️
+        </div>
+        <div className="text-left pr-2">
+          <p className="text-xs font-bold text-text-primary">Rajesh Kumar (Electrician)</p>
+          <p className="text-[11px] text-emerald-600 font-medium">● Available Today • ₹250/hr</p>
+        </div>
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+        className="hidden xl:flex items-center gap-3 absolute bottom-24 left-16 p-3.5 bg-surface/85 dark:bg-surface/75 backdrop-blur-xl rounded-2xl border border-border-hairline shadow-float z-10 animate-bounce"
+        style={{ animationDuration: '8s', animationDelay: '2s' }}
+      >
+        <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center font-bold text-lg">
+          🏪
+        </div>
+        <div className="text-left pr-2">
+          <p className="text-xs font-bold text-text-primary">The Artisan Bakery & Cafe</p>
+          <p className="text-[11px] text-text-secondary">★ 4.9 (142 reviews) • 300 m</p>
+        </div>
+      </motion.div>
 
       <motion.div
         variants={containerVariants}
@@ -92,14 +156,14 @@ export function Hero() {
         className="w-full max-w-4xl mx-auto text-center flex flex-col items-center relative z-10"
       >
         <motion.div variants={animationVariants} className="mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 text-sm font-medium">
-            <span>✨</span> Now connecting 10,000+ neighborhoods
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 text-sm font-medium shadow-sm">
+            <span>✨</span> Now connecting 10,000+ neighborhoods & housing societies
           </div>
         </motion.div>
 
         <motion.h1
           variants={animationVariants}
-          className="text-[clamp(2.5rem,6vw+1rem,5rem)] font-extrabold tracking-tight leading-[1.1] mb-6 text-text-primary"
+          className="text-[clamp(2.5rem,6vw+1rem,5rem)] font-extrabold tracking-tight leading-[1.1] mb-6 text-text-primary drop-shadow-sm"
         >
           Your neighborhood, <br className="hidden sm:block" />
           <span className="gradient-text">connected & thriving.</span>
@@ -107,10 +171,11 @@ export function Hero() {
 
         <motion.p
           variants={animationVariants}
-          className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-8 leading-relaxed"
+          className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-8 leading-relaxed font-normal"
         >
-          Search any neighborhood or street to instantly discover nearby local businesses, top-rated service providers, and community updates.
+          Search any neighborhood or street to instantly discover nearby hotels, top-rated service providers, local shops, and community updates.
         </motion.p>
+
 
         {/* Location Search Box & Live Dropdown */}
         <motion.div variants={animationVariants} className="w-full max-w-2xl mx-auto relative mb-6">
