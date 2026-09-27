@@ -18,21 +18,21 @@ import {
   searchWorldwidePlaces, 
   generatePlacesAroundCoordinates,
   fetchLiveNearbyHotels,
+  fetchLiveNearbyStores,
   GeocodedPlace,
   LiveHotel,
   LiveService,
   LiveBusiness
 } from "@/lib/geo";
 
-const DEFAULT_LAT = 37.7749;
-const DEFAULT_LNG = -122.4194;
-const DEFAULT_LOCATION_NAME = "San Francisco, CA";
+const DEFAULT_LAT = 19.0760; // Mumbai Center Default
+const DEFAULT_LNG = 72.8777;
+const DEFAULT_LOCATION_NAME = "Live Neighborhood";
 
 function BusinessesContent() {
   const searchParams = useSearchParams();
   const initialLocation = searchParams.get("location") || "";
   const initialSearch = searchParams.get("search") || "";
-
 
   // Real GPS & Location Coordinates
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number }>({
@@ -41,6 +41,7 @@ function BusinessesContent() {
   });
   const [activeLocationName, setActiveLocationName] = useState<string>(initialLocation || DEFAULT_LOCATION_NAME);
   const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [isLiveGpsActive, setIsLiveGpsActive] = useState<boolean>(false);
   const [locationInput, setLocationInput] = useState<string>(initialLocation || "");
   const [placeSuggestions, setPlaceSuggestions] = useState<GeocodedPlace[]>([]);
   const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
@@ -52,9 +53,11 @@ function BusinessesContent() {
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
   const [maxRadiusKm, setMaxRadiusKm] = useState<number>(5);
 
-  // Live Real Hotels state
+  // Live Real Hotels & Stores state
   const [hotels, setHotels] = useState<LiveHotel[]>([]);
+  const [stores, setStores] = useState<LiveBusiness[]>([]);
   const [isLoadingHotels, setIsLoadingHotels] = useState<boolean>(false);
+  const [isLoadingStores, setIsLoadingStores] = useState<boolean>(false);
 
   // Modals
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -63,17 +66,42 @@ function BusinessesContent() {
   const [bookingHotel, setBookingHotel] = useState<LiveHotel | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  // Auto-detect real device location on mount if no explicit location parameter
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      setIsLocating(true);
+      getBrowserLiveCoordinates()
+        .then(async (coords) => {
+          setCurrentCoords(coords);
+          setIsLiveGpsActive(true);
+          const geoInfo = await reverseGeocode(coords.lat, coords.lng);
+          const locName = geoInfo?.formattedName || `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`;
+          setActiveLocationName(locName);
+          setLocationInput(locName);
+          setIsLocating(false);
+
+        })
+        .catch((err) => {
+          console.log("GPS auto-detection skipped:", err);
+          setIsLocating(false);
+        });
+    }
+  }, []);
+
   // Real-time dynamic places calculated from current coordinates
-  const { businesses: allBusinesses, services: allServices } = generatePlacesAroundCoordinates(
+  const { businesses: dynamicBusinesses, services: allServices } = generatePlacesAroundCoordinates(
     currentCoords.lat,
     currentCoords.lng,
     activeLocationName
   );
 
-  // Fetch real OpenStreetMap live hotels whenever coordinates change
+  const allBusinesses = stores.length > 0 ? stores : dynamicBusinesses;
+
+  // Fetch real OpenStreetMap live hotels and stores whenever coordinates change
   useEffect(() => {
     let isCurrent = true;
     setIsLoadingHotels(true);
+    setIsLoadingStores(true);
 
     fetchLiveNearbyHotels(currentCoords.lat, currentCoords.lng, activeLocationName)
       .then((realHotels) => {
@@ -86,10 +114,22 @@ function BusinessesContent() {
         if (isCurrent) setIsLoadingHotels(false);
       });
 
+    fetchLiveNearbyStores(currentCoords.lat, currentCoords.lng, activeLocationName)
+      .then((realStores) => {
+        if (isCurrent && realStores.length > 0) {
+          setStores(realStores);
+          setIsLoadingStores(false);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) setIsLoadingStores(false);
+      });
+
     return () => {
       isCurrent = false;
     };
   }, [currentCoords.lat, currentCoords.lng, activeLocationName]);
+
 
   // Live real place search debounce
   useEffect(() => {

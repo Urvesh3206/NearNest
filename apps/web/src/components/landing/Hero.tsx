@@ -6,6 +6,8 @@ import { MapPin, ShieldCheck, Users, Star, ArrowRight, Store, Wrench, Search, Na
 import { Button } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getBrowserLiveCoordinates, reverseGeocode } from '@/lib/geo';
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -75,10 +77,25 @@ export function Hero() {
     router.push(`/businesses?location=${encodeURIComponent(loc)}`);
   };
 
-  const handleUseCurrentLocation = () => {
-    setLocationQuery('Greenfield Park (Current)');
-    router.push('/businesses?location=Greenfield+Park');
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
+
+  const handleUseCurrentLocation = async () => {
+    try {
+      setIsGpsLoading(true);
+      const coords = await getBrowserLiveCoordinates();
+      const geoInfo = await reverseGeocode(coords.lat, coords.lng);
+      const name: string = geoInfo?.formattedName || `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`;
+      setLocationQuery(name);
+      router.push(`/businesses?location=${encodeURIComponent(name)}&lat=${coords.lat}&lng=${coords.lng}`);
+
+    } catch (err) {
+      console.warn("GPS lookup error:", err);
+      router.push('/businesses');
+    } finally {
+      setIsGpsLoading(false);
+    }
   };
+
 
   return (
     <section className="relative min-h-[92dvh] flex flex-col items-center justify-center pt-28 pb-20 px-4 overflow-hidden">
