@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Star, MapPin, Phone, Clock, Share2, Heart,
-  CheckCircle2, MessageSquare, Calendar, ChevronRight
+  CheckCircle2, MessageSquare, Calendar, ChevronRight, ArrowLeft, Home
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -50,11 +50,14 @@ export default function BusinessDetailClient() {
   return (
     <div className="max-w-7xl mx-auto pb-12">
       {/* Banner */}
-      <div className="h-64 md:h-80 relative bg-slate-900 w-full">
+      <div className="h-64 md:h-80 relative bg-slate-900 w-full rounded-2xl overflow-hidden">
         <img src={BUSINESS.coverPhoto} alt="Cover" className="w-full h-full object-cover opacity-80" />
-        <div className="absolute top-4 left-4">
-          <Link href="/businesses" className="flex items-center gap-1 bg-white/20 hover:bg-white/30 backdrop-blur text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
-            <ChevronRight className="rotate-180" size={16} /> Back
+        <div className="absolute top-4 left-4 flex items-center gap-2">
+          <Link href="/businesses" className="flex items-center gap-1.5 bg-black/40 hover:bg-black/60 backdrop-blur text-white px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors border border-white/10 shadow-sm">
+            <ArrowLeft size={14} /> Back to Directory
+          </Link>
+          <Link href="/" className="flex items-center gap-1.5 bg-black/40 hover:bg-black/60 backdrop-blur text-white px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors border border-white/10 shadow-sm">
+            <Home size={14} /> Home
           </Link>
         </div>
         <div className="absolute top-4 right-4 flex gap-2">

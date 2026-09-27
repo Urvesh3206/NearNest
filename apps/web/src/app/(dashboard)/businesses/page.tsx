@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Star, MapPin, Phone, Clock, Plus,
   Calendar, CheckCircle2, X, Store, Wrench, Navigation, Filter,
-  ShieldCheck, ArrowRight, Sparkles, Map as MapIcon, List, Loader2,
+  ShieldCheck, ArrowRight, ArrowLeft, Home, ChevronRight, Sparkles, Map as MapIcon, List, Loader2,
   Compass, ExternalLink, BedDouble, Wifi, UtensilsCrossed, Car, Users
 } from "lucide-react";
 import Link from "next/link";
@@ -271,6 +271,30 @@ function BusinessesContent() {
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Breadcrumbs & Navigation Back Link */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+          <Link href="/" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+            <Home className="w-3.5 h-3.5" />
+            <span>Home</span>
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+          <Link href="/feed" className="hover:text-brand-600 transition-colors">
+            <span>Community Feed</span>
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+          <span className="text-text-primary font-semibold">Nearby Businesses & Services</span>
+        </div>
+
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-brand-600 bg-surface border border-border-hairline hover:border-brand-500/30 hover:bg-brand-50/50 dark:hover:bg-brand-950/20 transition-all shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Star, MapPin, Briefcase, Clock,
-  ShieldCheck, X, DollarSign, Plus, CheckCircle2, Navigation, Phone, Calendar
+  ShieldCheck, X, DollarSign, Plus, CheckCircle2, Navigation, Phone, Calendar,
+  Home, ArrowLeft, ChevronRight
 } from "lucide-react";
+import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
 
 const CATEGORIES = ["All", "Electrician", "Plumber", "Maid", "Cook", "Tutor", "AC Repair", "Carpenter", "Painter", "Yoga Trainer", "Babysitter", "RO Repair", "Driver", "Mechanic"];
@@ -200,6 +202,30 @@ function ServicesContent() {
 
   return (
     <div className="space-y-8">
+      {/* Breadcrumbs & Navigation Back Link */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+          <Link href="/" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+            <Home className="w-3.5 h-3.5" />
+            <span>Home</span>
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+          <Link href="/feed" className="hover:text-brand-600 transition-colors">
+            <span>Feed</span>
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+          <span className="text-text-primary font-semibold">Verified Services</span>
+        </div>
+
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-brand-600 bg-surface border border-border-hairline hover:border-brand-500/30 hover:bg-brand-50/50 dark:hover:bg-brand-950/20 transition-all shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
