@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="flex items-center gap-2 mb-16">
             <Building2 className="h-8 w-8 text-brand-100" />
-            <span className="text-2xl font-bold tracking-tight">NeighbourHub</span>
+            <span className="text-2xl font-bold tracking-tight">NearNest</span>
           </div>
 
           <div className="max-w-md mt-auto mb-auto">

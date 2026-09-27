@@ -41,6 +41,19 @@ export default function SignupPage() {
   };
   const strength = getStrength(password);
 
+  const handleRoleSelect = (roleId: string) => {
+    setSelectedRole(roleId);
+    // Auto-advance to Step 2 smoothly
+    setTimeout(() => {
+      setStep(2);
+    }, 200);
+  };
+
+  const getRoleTitle = (id: string | null) => {
+    const found = roles.find(r => r.id === id);
+    return found ? found.title : 'Resident';
+  };
+
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
@@ -87,7 +100,7 @@ export default function SignupPage() {
         {step > 1 && step < 3 && (
           <button
             onClick={() => setStep(step - 1)}
-            className="flex items-center text-sm font-medium text-text-secondary hover:text-text-primary mb-6 transition-colors"
+            className="flex items-center text-sm font-medium text-text-secondary hover:text-brand-600 mb-6 transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
@@ -105,10 +118,10 @@ export default function SignupPage() {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.3 }}
-                className="absolute w-full"
+                className="w-full"
               >
                 <div className="text-center mb-6">
-                  <h2 className="text-3xl font-bold text-text-primary mb-2">Join NeighbourHub</h2>
+                  <h2 className="text-3xl font-bold text-text-primary mb-2">Join NearNest</h2>
                   <p className="text-text-secondary">How would you like to use the platform?</p>
                 </div>
                 
@@ -116,16 +129,16 @@ export default function SignupPage() {
                   {roles.map((role) => (
                     <div
                       key={role.id}
-                      onClick={() => setSelectedRole(role.id)}
-                      className={`relative cursor-pointer p-4 rounded-2xl border transition-all duration-200 ${
+                      onClick={() => handleRoleSelect(role.id)}
+                      className={`relative cursor-pointer p-4 rounded-2xl border transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95 ${
                         selectedRole === role.id
-                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-sm'
+                          ? 'border-brand-500 bg-brand-50/80 dark:bg-brand-900/30 shadow-md ring-2 ring-brand-500/20'
                           : 'border-border-hairline bg-surface hover:border-brand-300 hover:shadow-card-hover'
                       }`}
                     >
                       {selectedRole === role.id && (
-                        <div className="absolute top-3 right-3 bg-brand-500 text-white rounded-full p-0.5">
-                          <Check className="h-3 w-3" />
+                        <div className="absolute top-3 right-3 bg-brand-500 text-white rounded-full p-0.5 shadow-sm">
+                          <Check className="h-3.5 w-3.5" />
                         </div>
                       )}
                       <role.icon className={`h-8 w-8 mb-3 ${selectedRole === role.id ? 'text-brand-600' : 'text-text-secondary'}`} />
@@ -135,7 +148,7 @@ export default function SignupPage() {
                   ))}
                 </div>
                 <Button
-                  className="w-full bg-brand-600 hover:bg-brand-700 text-white"
+                  className="w-full bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
                   disabled={!selectedRole}
                   onClick={() => setStep(2)}
                 >
@@ -160,9 +173,13 @@ export default function SignupPage() {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.3 }}
-                className="absolute w-full"
+                className="w-full"
               >
                 <div className="text-center mb-6">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-2 rounded-full bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                    <span>Role: {getRoleTitle(selectedRole)}</span>
+                    <button onClick={() => setStep(1)} className="text-text-tertiary hover:text-brand-600 underline text-[11px] ml-1">Change</button>
+                  </div>
                   <h2 className="text-3xl font-bold text-text-primary mb-2">Create Account</h2>
                   <p className="text-text-secondary">Fill in your details below</p>
                 </div>
