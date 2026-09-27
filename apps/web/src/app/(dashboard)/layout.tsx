@@ -25,7 +25,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col md:flex-row">
+    <div className="min-h-screen bg-canvas flex flex-col md:flex-row relative selection:bg-brand-500/30">
+      {/* Background Architectural Layer */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat opacity-[0.04] dark:opacity-[0.08] transition-opacity duration-700"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2000&auto=format&fit=crop')`
+        }}
+      />
+      {/* Ambient Gradient Glows */}
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-brand-500/10 dark:bg-brand-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-pulse" />
+      <div className="fixed bottom-10 right-10 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-3xl pointer-events-none z-0" />
+
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -33,6 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
+
 
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border-hairline transform transition-transform duration-300 md:translate-x-0 md:static md:flex md:flex-col ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -89,7 +101,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-h-screen overflow-hidden relative z-10">
+
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-surface-glass backdrop-blur-xl border-b border-border-hairline z-30 sticky top-0">
           <div className="flex items-center gap-4">
