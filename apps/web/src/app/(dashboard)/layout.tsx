@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Store, Briefcase, Calendar, ShoppingBag, MessageCircle, Bell, Building2, Settings, HelpCircle, Menu, Search, X, Bot, ShieldAlert, Shield } from 'lucide-react';
+import { Home, Store, Briefcase, Calendar, ShoppingBag, MessageCircle, Bell, Building2, Settings, HelpCircle, Menu, Search, X, Bot, ShieldAlert, Shield, LogOut } from 'lucide-react';
 import { Avatar, Input, Badge } from '@/components/ui';
+import { useAuth } from '@/providers/AuthProvider';
 
 const navItems = [
   { href: '/feed', icon: Home, label: 'Home Feed' },
@@ -23,6 +24,7 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col md:flex-row">
@@ -34,8 +36,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-
-
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border-hairline transform transition-transform duration-300 md:translate-x-0 md:static md:flex md:flex-col ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between md:justify-start gap-3">
@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="bg-brand-500 p-1.5 rounded-lg">
               <Building2 className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-text-primary">NeighbourHub</span>
+            <span className="text-xl font-bold tracking-tight text-text-primary">NearNest</span>
           </div>
           <button className="md:hidden text-text-secondary" onClick={() => setMobileMenuOpen(false)}>
             <X className="h-6 w-6" />
@@ -74,17 +74,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-surface-subtle transition-colors">
             <Settings className="h-5 w-5" /> Settings
           </Link>
-          <Link href="/help" className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-surface-subtle transition-colors">
-            <HelpCircle className="h-5 w-5" /> Help & Support
-          </Link>
+          <button 
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-coral-600 dark:text-coral-400 hover:bg-coral-50 dark:hover:bg-coral-950/30 transition-colors text-left font-medium"
+          >
+            <LogOut className="h-5 w-5" /> Log Out
+          </button>
         </div>
 
         <div className="p-4 border-t border-border-hairline">
           <Link href="/profile" className="flex items-center gap-3 hover:bg-surface-subtle p-2 rounded-xl transition-colors">
-            <Avatar src="https://i.pravatar.cc/150?u=a042581f4e29026024d" name="JD" />
+            <Avatar 
+              src={user?.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop"} 
+              name={user?.name || "User"} 
+            />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">John Doe</p>
-              <p className="text-xs text-text-secondary truncate">Resident</p>
+              <p className="text-sm font-medium text-text-primary truncate">{user?.name || "John Doe"}</p>
+              <p className="text-xs text-text-secondary truncate">{user?.role || "Resident"}</p>
             </div>
           </Link>
         </div>
@@ -118,11 +124,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell className="h-5 w-5" />
               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-coral-500"></span>
             </button>
-            <Link href="/profile">
-              <Avatar src="https://i.pravatar.cc/150?u=a042581f4e29026024d" name="User" className="h-9 w-9 border-2 border-surface cursor-pointer" />
+            <Link href="/profile" className="flex items-center gap-2">
+              <Avatar 
+                src={user?.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop"} 
+                name={user?.name || "User"} 
+                className="h-9 w-9 border-2 border-brand-500/30 cursor-pointer hover:border-brand-500 transition-colors" 
+              />
             </Link>
           </div>
         </header>
+
 
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">

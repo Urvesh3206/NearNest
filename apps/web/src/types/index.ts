@@ -3,8 +3,21 @@ export interface AuthUser {
   email: string;
   name: string;
   photoURL?: string;
+  coverURL?: string;
   role: 'RESIDENT' | 'BUSINESS' | 'SERVICE_PROVIDER' | 'ADMIN';
+  phone?: string;
+  bio?: string;
+  society?: string;
+  unit?: string;
+  city?: string;
+  street?: string;
+  zip?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  interests?: string[];
+  joinedDate?: string;
 }
+
 
 export interface NavItem {
   label: string;

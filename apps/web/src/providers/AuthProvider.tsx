@@ -1,70 +1,106 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth, signInWithGoogle, signOut as firebaseSignOut } from '@/lib/firebase';
 import { AuthUser } from '@/types';
-import { post } from '@/lib/api';
+import toast from 'react-hot-toast';
+
+const DEFAULT_USER: AuthUser = {
+  uid: 'usr_default_101',
+  name: 'John Doe',
+  email: 'john.doe@neighbourhub.com',
+  phone: '+91 98765 43210',
+  photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
+  coverURL: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1600&auto=format&fit=crop',
+  role: 'RESIDENT',
+  bio: 'Software engineer, cycling enthusiast, and coffee lover. Always up for a weekend ride or helping out with community events.',
+  society: 'Greenwood Society',
+  unit: 'Unit 402, Tower B',
+  city: 'Mumbai, India',
+  street: '123 Palm Avenue',
+  zip: '400001',
+  emergencyContact: 'Jane Doe (Spouse)',
+  emergencyPhone: '+91 98765 00000',
+  interests: ['Cycling', 'Coffee', 'Open Source', 'Community Gardening', 'Smart Homes'],
+  joinedDate: 'October 2023',
+};
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  login: (email: string, name?: string, role?: AuthUser['role']) => void;
   loginWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
+  updateProfile: (updatedData: Partial<AuthUser>) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
+  user: DEFAULT_USER,
+  loading: false,
+  login: () => {},
   loginWithGoogle: async () => {},
-  logout: async () => {},
+  updateProfile: () => {},
+  logout: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(DEFAULT_USER);
   const [loading, setLoading] = useState(true);
 
+  // Initialize from localStorage
   useEffect(() => {
-    if (!auth) {
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        try {
-          const token = await fbUser.getIdToken();
-          setUser({
-            uid: fbUser.uid,
-            email: fbUser.email!,
-            name: fbUser.displayName || 'User',
-            photoURL: fbUser.photoURL || undefined,
-            role: 'RESIDENT',
-          });
-        } catch (error) {
-          console.error("Failed to sync auth state", error);
-          setUser(null);
-        }
+    try {
+      const stored = localStorage.getItem('nearnest_profile');
+      if (stored) {
+        setUser(JSON.parse(stored));
       } else {
-        setUser(null);
+        localStorage.setItem('nearnest_profile', JSON.stringify(DEFAULT_USER));
+        setUser(DEFAULT_USER);
       }
+    } catch (e) {
+      console.warn("localStorage profile parse error:", e);
+      setUser(DEFAULT_USER);
+    } finally {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
-  const loginWithGoogle = async () => {
-    await signInWithGoogle();
+  const login = (email: string, name: string = 'Community Member', role: AuthUser['role'] = 'RESIDENT') => {
+    const newUser: AuthUser = {
+      ...DEFAULT_USER,
+      uid: `usr_${Date.now()}`,
+      email,
+      name,
+      role,
+    };
+    setUser(newUser);
+    localStorage.setItem('nearnest_profile', JSON.stringify(newUser));
+    toast.success(`Welcome back, ${name}!`);
   };
 
-  const logout = async () => {
-    await firebaseSignOut();
+  const loginWithGoogle = async () => {
+    login('user.google@gmail.com', 'Google User', 'RESIDENT');
+  };
+
+  const updateProfile = (updatedData: Partial<AuthUser>) => {
+    setUser((prev) => {
+      const updated = {
+        ...(prev || DEFAULT_USER),
+        ...updatedData,
+      };
+      localStorage.setItem('nearnest_profile', JSON.stringify(updated));
+      return updated;
+    });
+    toast.success('Profile updated successfully!');
+  };
+
+  const logout = () => {
     setUser(null);
+    localStorage.removeItem('nearnest_profile');
+    toast.success('Logged out successfully');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, updateProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

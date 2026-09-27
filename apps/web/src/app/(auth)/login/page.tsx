@@ -17,6 +17,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -28,11 +29,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      await signInWithEmail(data.email, data.password);
+      const name = data.email.split('@')[0];
+      login(data.email, name.charAt(0).toUpperCase() + name.slice(1));
       router.push('/feed');
     } catch (error) {
       console.error(error);
-      // Toast error handling would go here
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +42,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
+      login('google.resident@nearnest.com', 'Alex Rivera', 'RESIDENT');
       router.push('/feed');
     } catch (error) {
       console.error(error);
@@ -49,6 +50,7 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
+
 
   return (
     <LazyMotion features={domAnimation}>
