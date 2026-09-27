@@ -270,13 +270,13 @@ function BusinessesContent() {
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Breadcrumbs & Navigation Back Link */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-12 relative">
+      {/* Top Banner & Quick Navigation to Home */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-brand-50/80 dark:bg-brand-950/40 rounded-2xl border border-brand-200 dark:border-brand-900 shadow-sm backdrop-blur-sm">
         <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-          <Link href="/" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
-            <Home className="w-3.5 h-3.5" />
-            <span>Home</span>
+          <Link href="/" className="flex items-center gap-1.5 font-bold text-brand-600 hover:text-brand-700 hover:underline transition-colors">
+            <Home className="w-4 h-4" />
+            <span>NearNest Home</span>
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
           <Link href="/feed" className="hover:text-brand-600 transition-colors">
@@ -286,13 +286,21 @@ function BusinessesContent() {
           <span className="text-text-primary font-semibold">Nearby Businesses & Services</span>
         </div>
 
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-brand-600 bg-surface border border-border-hairline hover:border-brand-500/30 hover:bg-brand-50/50 dark:hover:bg-brand-950/20 transition-all shadow-sm"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Home</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-sm hover:shadow transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
+          </Link>
+          <Link
+            href="/feed"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary bg-surface border border-border-hairline shadow-sm transition-all"
+          >
+            <span>Feed</span>
+          </Link>
+        </div>
       </div>
 
       {/* Header */}
@@ -1154,6 +1162,17 @@ function BusinessesContent() {
           </div>
         )}
       </AnimatePresence>
+      {/* Floating Back to Home Button */}
+      <div className="fixed bottom-6 right-6 z-40 hidden sm:block">
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 border border-white/20"
+          title="Return to Main Home Page"
+        >
+          <Home className="w-4 h-4" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
     </div>
   );
 }

@@ -39,12 +39,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border-hairline transform transition-transform duration-300 md:translate-x-0 md:static md:flex md:flex-col ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between md:justify-start gap-3">
-          <div className="flex items-center gap-2">
-            <div className="bg-brand-500 p-1.5 rounded-lg">
+          <Link href="/" className="flex items-center gap-2.5 group cursor-pointer" title="Go to Main Home Page">
+            <div className="bg-brand-500 p-2 rounded-xl group-hover:scale-105 transition-transform shadow-sm">
               <Building2 className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-text-primary">NearNest</span>
-          </div>
+            <div>
+              <span className="text-xl font-bold tracking-tight text-text-primary group-hover:text-brand-600 transition-colors">NearNest</span>
+              <span className="block text-[10px] text-brand-600 font-semibold group-hover:underline">← Home Page</span>
+            </div>
+          </Link>
           <button className="md:hidden text-text-secondary" onClick={() => setMobileMenuOpen(false)}>
             <X className="h-6 w-6" />
           </button>
@@ -71,6 +74,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-4 border-t border-border-hairline space-y-1">
+          <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-colors font-medium">
+            <Home className="h-5 w-5" /> Landing Home
+          </Link>
           <Link href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-surface-subtle transition-colors">
             <Settings className="h-5 w-5" /> Settings
           </Link>
@@ -110,7 +116,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Input placeholder="Search your community..." className="pl-9 rounded-full bg-surface-subtle border-transparent focus:bg-surface" />
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Direct Back to Home Page button */}
+            <Link 
+              href="/" 
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400 border border-brand-200 dark:border-brand-800/60 hover:bg-brand-500 hover:text-white transition-all shadow-sm"
+              title="Return to Main Home Page"
+            >
+              <Home className="h-3.5 w-3.5" />
+              <span>Back to Home</span>
+            </Link>
+
             <Link href="/ai-assistant" className="hidden sm:flex relative p-2 text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-full transition-colors" title="AI Assistant">
               <Bot className="h-5 w-5" />
             </Link>
