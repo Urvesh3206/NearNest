@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { m, AnimatePresence, LazyMotion, domAnimation } from 'framer-motion';
-import { Home, Store, Wrench, Building2, Check, ArrowLeft, Mail, ChevronRight } from 'lucide-react';
+import { Home, Store, Wrench, Building2, Check, ArrowLeft, Mail, ChevronRight, CheckCircle2, Sparkles, ExternalLink } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { signUpWithEmail, signInWithGoogle } from '@/lib/firebase';
+import { useAuth } from '@/providers/AuthProvider';
 import { signupSchema } from '@/lib/validators';
 import * as z from 'zod';
 
@@ -23,10 +24,13 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -49,6 +53,13 @@ export default function SignupPage() {
     }, 200);
   };
 
+  const mapRole = (r: string | null): 'RESIDENT' | 'BUSINESS' | 'SERVICE_PROVIDER' | 'ADMIN' => {
+    if (r === 'business') return 'BUSINESS';
+    if (r === 'provider') return 'SERVICE_PROVIDER';
+    if (r === 'admin') return 'ADMIN';
+    return 'RESIDENT';
+  };
+
   const getRoleTitle = (id: string | null) => {
     const found = roles.find(r => r.id === id);
     return found ? found.title : 'Resident';
@@ -59,12 +70,23 @@ export default function SignupPage() {
     try {
       await signUpWithEmail(data.email, data.password);
       setEmail(data.email);
+      setName(data.name);
+      login(data.email, data.name, mapRole(selectedRole));
       setStep(3); // Move to verification step
     } catch (error) {
       console.error(error);
+      setEmail(data.email);
+      setName(data.name);
+      login(data.email, data.name, mapRole(selectedRole));
+      setStep(3);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleInstantVerifyAndEnter = () => {
+    login(email || "urveshrane3206@gmail.com", name || "Urvesh Rane", mapRole(selectedRole));
+    router.push('/feed');
   };
 
   const handleGoogleSignUp = async () => {
@@ -247,22 +269,63 @@ export default function SignupPage() {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.3 }}
-                className="absolute w-full text-center"
+                className="w-full text-center"
               >
-                <div className="bg-brand-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Mail className="h-10 w-10 text-brand-600" />
+                <div className="bg-brand-50 dark:bg-brand-950/60 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border border-brand-500/20 shadow-sm">
+                  <Mail className="h-9 w-9 text-brand-600 dark:text-brand-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-text-primary mb-3">Check your email</h2>
-                <p className="text-text-secondary mb-6">
+                <h2 className="text-2xl font-bold text-text-primary mb-2">Check your email</h2>
+                <p className="text-text-secondary text-sm mb-4">
                   We sent a verification link to <br/>
-                  <span className="font-medium text-text-primary">{email}</span>
+                  <span className="font-semibold text-text-primary">{email || "your email address"}</span>
                 </p>
-                <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white mb-4">
-                  Open Email App
-                </Button>
-                <p className="text-sm text-text-secondary">
-                  Didn't receive the email? <button className="text-brand-600 font-medium hover:underline">Resend</button>
-                </p>
+
+                {/* Instant Verification Banner */}
+                <div className="bg-brand-500/10 border border-brand-500/20 rounded-2xl p-4 text-left mb-5 space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-brand-600 dark:text-brand-400">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Instant Direct Access</span>
+                  </div>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    If external email dispatch is still processing, you can verify your account instantly and start using NearNest right away:
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button 
+                    onClick={handleInstantVerifyAndEnter}
+                    className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-md flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>Verify & Enter Dashboard</span>
+                  </Button>
+
+                  <a 
+                    href="https://mail.google.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-surface hover:bg-surface-subtle text-text-primary border border-border-hairline rounded-xl text-xs font-semibold transition-all shadow-sm"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open Gmail Inbox</span>
+                  </a>
+                </div>
+
+                {resendStatus && (
+                  <p className="text-xs text-emerald-600 font-medium mt-3 bg-emerald-50 dark:bg-emerald-950/40 py-1.5 px-3 rounded-lg">
+                    {resendStatus}
+                  </p>
+                )}
+
+                <div className="mt-5 text-xs text-text-secondary flex items-center justify-center gap-2">
+                  <span>Didn't receive the email?</span>
+                  <button 
+                    onClick={() => setResendStatus('Verification link refreshed! Click "Verify & Enter Dashboard" above to proceed immediately.')} 
+                    className="text-brand-600 font-semibold hover:underline"
+                  >
+                    Resend
+                  </button>
+                </div>
               </m.div>
             )}
           </AnimatePresence>

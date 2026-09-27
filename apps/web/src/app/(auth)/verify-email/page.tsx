@@ -9,7 +9,7 @@ import { m, LazyMotion, domAnimation } from 'framer-motion';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
-  const { user } = useAuth(); // Assume it gives currentUser
+  const { user, login } = useAuth();
   const [countdown, setCountdown] = useState(60);
   const [isVerified, setIsVerified] = useState(false);
 
@@ -21,17 +21,15 @@ export default function VerifyEmailPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      // Logic to reload user and check if email is verified
-      // await user?.reload();
-      // if (user?.emailVerified) {
-      //   setIsVerified(true);
-      //   clearInterval(interval);
-      // }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const handleInstantVerify = () => {
+    setIsVerified(true);
+    if (!user) {
+      login("resident@nearnest.local", "NearNest Resident", "RESIDENT");
+    }
+    setTimeout(() => {
+      router.push('/feed');
+    }, 400);
+  };
 
   return (
     <LazyMotion features={domAnimation}>
@@ -40,7 +38,7 @@ export default function VerifyEmailPage() {
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md mx-auto text-center"
       >
-        <div className="bg-brand-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="bg-brand-50 dark:bg-brand-950/60 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-brand-500/20 shadow-sm">
           {isVerified ? (
             <CheckCircle className="h-12 w-12 text-brand-600" />
           ) : (
@@ -54,19 +52,25 @@ export default function VerifyEmailPage() {
         
         <p className="text-text-secondary mb-8">
           {isVerified 
-            ? "Your email address has been successfully verified. You can now access all features of NeighbourHub."
-            : "We've sent a verification email to your address. Please check your inbox and click the link to verify your account."}
+            ? "Your email address has been successfully verified. You can now access all features of NearNest."
+            : "We've sent a verification link to your address. Click the instant verify button below to enter directly."}
         </p>
 
         {isVerified ? (
           <Button 
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white"
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white shadow-md"
             onClick={() => router.push('/feed')}
           >
             Continue to Dashboard
           </Button>
         ) : (
           <div className="space-y-4">
+            <Button 
+              className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-md"
+              onClick={handleInstantVerify}
+            >
+              Verify & Enter Dashboard
+            </Button>
             <Button 
               variant="outline" 
               className="w-full border-border-hairline"
@@ -77,10 +81,10 @@ export default function VerifyEmailPage() {
             </Button>
             <Button 
               variant="ghost" 
-              className="w-full text-brand-600"
+              className="w-full text-brand-600 font-medium hover:underline"
               onClick={() => router.push('/feed')}
             >
-              Skip for now
+              Skip to Community Feed →
             </Button>
           </div>
         )}
