@@ -6,8 +6,9 @@ export const APP_CONFIG = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1',
   socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000',
   support: {
-    email: 'support@nearnest.com',
-    phone: '+91 98765 43210',
+    email: 'urveshrane3206@gmail.com',
+    phone: '+91 9373571631',
+    office: 'Ajeenkya D Y Patil University, Pune, Maharashtra, India',
   },
   social: {
     twitter: 'https://twitter.com/nearnest',

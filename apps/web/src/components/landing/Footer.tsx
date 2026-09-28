@@ -43,9 +43,14 @@ export function Footer() {
                 {APP_CONFIG?.name || 'NearNest'}
               </span>
             </Link>
-            <p className="text-sm mb-6 leading-relaxed">
+            <p className="text-sm mb-4 leading-relaxed">
               Bringing communities together. Connect, share, and thrive in your neighborhood.
             </p>
+            <div className="space-y-1.5 text-xs text-gray-400 mb-6">
+              <p><strong className="text-gray-300">Email:</strong> <a href="mailto:urveshrane3206@gmail.com" className="text-brand-400 hover:underline">urveshrane3206@gmail.com</a></p>
+              <p><strong className="text-gray-300">Phone:</strong> <a href="tel:+919373571631" className="text-brand-400 hover:underline">+91 9373571631</a></p>
+              <p><strong className="text-gray-300">Office:</strong> Ajeenkya D Y Patil, Pune, India</p>
+            </div>
           </div>
           
           <div>
