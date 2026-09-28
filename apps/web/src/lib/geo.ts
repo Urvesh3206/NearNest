@@ -156,7 +156,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocat
       {
         headers: {
           'Accept-Language': 'en',
-          'User-Agent': 'NeighbourHub-Community-App/1.0',
+          'User-Agent': 'NearNest-Community-App/1.0',
         },
       }
     );
@@ -220,7 +220,7 @@ export async function searchWorldwidePlaces(query: string): Promise<GeocodedPlac
       {
         headers: {
           'Accept-Language': 'en',
-          'User-Agent': 'NeighbourHub-Community-App/1.0',
+          'User-Agent': 'NearNest-Community-App/1.0',
         },
       }
     );
@@ -270,7 +270,7 @@ export async function fetchLiveNearbyHotels(
     const res = await fetch(url, {
       headers: {
         'Accept-Language': 'en',
-        'User-Agent': 'NeighbourHub-Community-App/1.0',
+        'User-Agent': 'NearNest-Community-App/1.0',
       },
     });
 

@@ -1,4 +1,4 @@
-export const APP_NAME = "NeighbourHub";
+export const APP_NAME = "NearNest";
 export const DEFAULT_PAGINATION_LIMIT = 10;
 export const MAX_FILE_SIZE_MB = 10;
 export const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];

@@ -3,7 +3,7 @@
 import { Star } from 'lucide-react';
 
 const testimonials = [
-  { quote: "NeighbourHub completely changed how we manage our society. Maintenance requests are handled in a breeze now.", author: "Sarah Jenkins", hood: "Greenfield Park", rating: 5 },
+  { quote: "NearNest completely changed how we manage our society. Maintenance requests are handled in a breeze now.", author: "Sarah Jenkins", hood: "Greenfield Park", rating: 5 },
   { quote: "I found the best local plumber and a great dog walker within hours of moving in. Incredible app!", author: "Mike T.", hood: "Riverside Heights", rating: 5 },
   { quote: "The emergency SOS feature gives my family so much peace of mind. Every neighborhood should have this.", author: "Priya Patel", hood: "Maplewood West", rating: 5 },
   { quote: "As a local bakery owner, this platform helped me connect with hundreds of new customers right around the corner.", author: "David Kim", hood: "Sunnyvale", rating: 4 },

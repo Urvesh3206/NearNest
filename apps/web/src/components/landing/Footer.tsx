@@ -40,7 +40,7 @@ export function Footer() {
                 <Sparkles className="w-5 h-5 text-brand-500" />
               </div>
               <span className="font-bold text-xl text-white tracking-tight">
-                {APP_CONFIG?.name || 'NeighbourHub'}
+                {APP_CONFIG?.name || 'NearNest'}
               </span>
             </Link>
             <p className="text-sm mb-6 leading-relaxed">
@@ -86,7 +86,7 @@ export function Footer() {
         </div>
         
         <div className="pt-8 border-t border-gray-900 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm">© {new Date().getFullYear()} {APP_CONFIG?.name || 'NeighbourHub'}. All rights reserved.</p>
+          <p className="text-sm">© {new Date().getFullYear()} {APP_CONFIG?.name || 'NearNest'}. All rights reserved.</p>
           <p className="text-sm flex items-center gap-1">
             Made with <span className="text-red-500">❤️</span> for communities
           </p>

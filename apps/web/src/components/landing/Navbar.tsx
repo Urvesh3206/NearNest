@@ -43,7 +43,7 @@ export function Navbar() {
             <Sparkles className="w-5 h-5 text-brand-500" />
           </div>
           <span className="font-bold text-xl tracking-tight gradient-text">
-            {APP_CONFIG?.name || 'NeighbourHub'}
+            {APP_CONFIG?.name || 'NearNest'}
           </span>
         </Link>
 

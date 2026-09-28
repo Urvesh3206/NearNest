@@ -72,7 +72,7 @@ export default function ProfilePage() {
           <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-sm text-text-tertiary mb-6">
             <span className="flex items-center text-text-secondary"><Building2 className="h-4 w-4 mr-1.5 text-brand-500" /> {user?.society || "Greenwood Society"}, {user?.unit || "Unit 402"}</span>
             <span className="flex items-center text-text-secondary"><MapPin className="h-4 w-4 mr-1.5 text-emerald-500" /> {user?.city || "Mumbai, India"}</span>
-            <span className="flex items-center text-text-secondary"><Mail className="h-4 w-4 mr-1.5 text-blue-500" /> {user?.email || "john.doe@neighbourhub.com"}</span>
+            <span className="flex items-center text-text-secondary"><Mail className="h-4 w-4 mr-1.5 text-blue-500" /> {user?.email || "john.doe@nearnest.com"}</span>
             <span className="flex items-center text-text-secondary"><Phone className="h-4 w-4 mr-1.5 text-amber-500" /> {user?.phone || "+91 98765 43210"}</span>
             <span className="flex items-center text-text-secondary"><Calendar className="h-4 w-4 mr-1.5 text-purple-500" /> Joined {user?.joinedDate || "October 2023"}</span>
           </div>

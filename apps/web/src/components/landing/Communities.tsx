@@ -36,7 +36,7 @@ export function Communities() {
           Thriving communities across the country
         </h2>
         <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-          From bustling city apartments to quiet suburban streets, NeighbourHub connects them all.
+          From bustling city apartments to quiet suburban streets, NearNest connects them all.
         </p>
       </div>
 

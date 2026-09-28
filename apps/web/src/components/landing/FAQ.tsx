@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
 const faqs = [
-  { question: "What is NeighbourHub?", answer: "NeighbourHub is a private social network and community management platform designed specifically for neighborhoods, apartment complexes, and local communities to connect, share, and manage daily life." },
+  { question: "What is NearNest?", answer: "NearNest is a private social network and community management platform designed specifically for neighborhoods, apartment complexes, and local communities to connect, share, and manage daily life." },
   { question: "How does verification work?", answer: "We use a combination of address verification (via utility bills or lease agreements) and phone number validation to ensure that only real residents can join a specific neighborhood." },
   { question: "Is it free for residents?", answer: "Yes! The core resident features, including the community feed, messaging, and local discovery, are completely free forever." },
   { question: "How do businesses join?", answer: "Local businesses can claim or create a profile through our Business tier. This gives them tools to promote services, accept bookings, and engage with the local community securely." },

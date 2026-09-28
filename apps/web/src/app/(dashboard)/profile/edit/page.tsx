@@ -36,7 +36,7 @@ export default function EditProfilePage() {
   const { register, handleSubmit } = useForm({
     defaultValues: {
       name: user?.name || 'John Doe',
-      email: user?.email || 'john.doe@neighbourhub.com',
+      email: user?.email || 'john.doe@nearnest.com',
       phone: user?.phone || '+91 98765 43210',
       bio: user?.bio || 'Software engineer, cycling enthusiast...',
       society: user?.society || 'Greenwood Society',

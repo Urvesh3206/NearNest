@@ -36,7 +36,7 @@ export function Contact() {
             <div>
               <h4 className="text-lg font-semibold text-text-primary mb-1">Email us</h4>
               <p className="text-text-secondary mb-1">Our friendly team is here to help.</p>
-              <a href="mailto:hello@neighbourhub.com" className="text-brand-500 font-medium hover:underline">hello@neighbourhub.com</a>
+              <a href="mailto:hello@nearnest.com" className="text-brand-500 font-medium hover:underline">hello@nearnest.com</a>
             </div>
           </div>
           

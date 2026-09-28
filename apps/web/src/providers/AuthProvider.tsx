@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 const DEFAULT_USER: AuthUser = {
   uid: 'usr_default_101',
   name: 'John Doe',
-  email: 'john.doe@neighbourhub.com',
+  email: 'john.doe@nearnest.com',
   phone: '+91 98765 43210',
   photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
   coverURL: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1600&auto=format&fit=crop',

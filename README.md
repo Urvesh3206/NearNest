@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://api.dicebear.com/7.x/identicon/svg?seed=NeighbourHub&backgroundColor=059669" alt="NeighbourHub Logo" width="80" height="80" />
-  <h1>🌟 NeighbourHub</h1>
+  <img src="https://api.dicebear.com/7.x/identicon/svg?seed=NearNest&backgroundColor=059669" alt="NearNest Logo" width="80" height="80" />
+  <h1>🌟 NearNest</h1>
   <p><strong>A Modern, Scalable Full-Stack Community & Neighborhood Operating Platform</strong></p>
   <p>Connecting Residents, Housing Societies, Nearby Businesses, Service Providers, and Local Authorities in One Secure Ecosystem.</p>
 
@@ -112,8 +112,8 @@ c:/Final Project/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/neighbourhub.git
-   cd neighbourhub
+   git clone https://github.com/Urvesh3206/NearNest.git
+   cd NearNest
    ```
 
 2. **Install dependencies:**
