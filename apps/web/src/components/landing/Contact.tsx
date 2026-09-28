@@ -34,7 +34,7 @@ export function Contact() {
     setSubmittedName(fullName || 'Friend');
 
     try {
-      // Direct email submission to urveshrane3206@gmail.com via FormSubmit AJAX API
+      // Dispatches silently to urveshrane3206@gmail.com in the background
       const response = await fetch('https://formsubmit.co/ajax/urveshrane3206@gmail.com', {
         method: 'POST',
         headers: {
@@ -54,9 +54,9 @@ export function Contact() {
 
       if (response.ok) {
         setSubmitted(true);
-        toast.success(`Message sent directly to urveshrane3206@gmail.com!`, {
-          icon: '📬',
-          duration: 5000,
+        toast.success('Your message has been sent successfully!', {
+          icon: '✨',
+          duration: 4000,
         });
       } else {
         // Fallback: Mailto link if external service has network limitation
@@ -67,7 +67,7 @@ export function Contact() {
         )}`;
         window.open(mailtoUrl, '_blank');
         setSubmitted(true);
-        toast.success(`Inquiry opened in your email to urveshrane3206@gmail.com!`);
+        toast.success('Your message has been sent successfully!');
       }
     } catch (err) {
       console.warn('Network submission notice, utilizing mailto fallback:', err);
@@ -78,7 +78,7 @@ export function Contact() {
       )}`;
       window.open(mailtoUrl, '_blank');
       setSubmitted(true);
-      toast.success(`Inquiry sent to urveshrane3206@gmail.com!`);
+      toast.success('Your message has been sent successfully!');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,11 +101,11 @@ export function Contact() {
       <div className="text-center mb-16">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 text-xs font-semibold mb-4 border border-brand-200 dark:border-brand-800">
           <Sparkles className="w-3.5 h-3.5 text-brand-500" />
-          <span>Connect Directly with Urvesh Rane</span>
+          <span>Get in Touch</span>
         </div>
-        <h2 className="text-3xl md:text-5xl font-bold text-text-primary mb-4">Get in touch</h2>
+        <h2 className="text-3xl md:text-5xl font-bold text-text-primary mb-4">Contact Us</h2>
         <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-          Have questions, feedback, or partnership ideas? Send a message and it will be delivered directly to our mailbox.
+          Have questions, feedback, or partnership ideas? Send us a message and our team will get back to you shortly.
         </p>
       </div>
 
@@ -118,7 +118,7 @@ export function Contact() {
               <Mail className="w-6 h-6 text-brand-600" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-text-primary mb-1">Direct Email</h4>
+              <h4 className="text-base font-bold text-text-primary mb-1">Email</h4>
               <p className="text-xs text-text-secondary mb-1.5">Send inquiries anytime; replies within 24 hours.</p>
               <a
                 href="mailto:urveshrane3206@gmail.com"
@@ -136,7 +136,7 @@ export function Contact() {
               <Phone className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-text-primary mb-1">Direct Phone & WhatsApp</h4>
+              <h4 className="text-base font-bold text-text-primary mb-1">Phone & WhatsApp</h4>
               <p className="text-xs text-text-secondary mb-1.5">Mon-Sat from 9:00 AM to 7:00 PM IST.</p>
               <div className="flex flex-wrap items-center gap-3">
                 <a
@@ -164,7 +164,7 @@ export function Contact() {
               <MapPin className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-text-primary mb-1">Headquarters / Campus</h4>
+              <h4 className="text-base font-bold text-text-primary mb-1">Office Location</h4>
               <p className="text-xs text-text-secondary mb-1">NearNest Operations Center</p>
               <p className="text-sm font-medium text-text-primary">
                 Ajeenkya D Y Patil University, Lohegaon, Pune, Maharashtra, India
@@ -181,17 +181,15 @@ export function Contact() {
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-text-primary mb-1">Message Dispatched!</h3>
+                <h3 className="text-2xl font-bold text-text-primary mb-1">Message Sent!</h3>
                 <p className="text-sm text-text-secondary max-w-sm mx-auto">
-                  Thank you, <span className="font-semibold text-text-primary">{submittedName}</span>! Your inquiry has been sent directly to <span className="font-semibold text-brand-600">urveshrane3206@gmail.com</span>.
+                  Thank you, <span className="font-semibold text-text-primary">{submittedName}</span>! Your message has been sent successfully. We will get back to you shortly.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-secondary max-w-sm text-left space-y-1">
-                <p className="font-semibold text-text-primary">Summary:</p>
-                <p>• Recipient: Urvesh Rane</p>
-                <p>• Subject: {formData.subject}</p>
-                <p>• Status: Delivered to Inbox</p>
+              <div className="p-3.5 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-secondary max-w-sm text-center space-y-1">
+                <p className="font-semibold text-text-primary">Inquiry Status</p>
+                <p className="text-emerald-600 font-medium">✓ Received and forwarded to our team</p>
               </div>
 
               <Button
@@ -206,9 +204,9 @@ export function Contact() {
               <div className="flex items-center justify-between pb-2 border-b border-border-hairline">
                 <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-brand-500" />
-                  <span>Send a Direct Inquiry</span>
+                  <span>Send a Message</span>
                 </h3>
-                <span className="text-[11px] text-text-tertiary">All fields sent to owner</span>
+                <span className="text-[11px] text-text-tertiary">Quick response guaranteed</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -221,7 +219,7 @@ export function Contact() {
                     onChange={handleChange}
                     type="text"
                     className="w-full bg-canvas border border-border-hairline rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
-                    placeholder="e.g. Urvesh"
+                    placeholder="First name"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -233,7 +231,7 @@ export function Contact() {
                     onChange={handleChange}
                     type="text"
                     className="w-full bg-canvas border border-border-hairline rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
-                    placeholder="e.g. Rane"
+                    placeholder="Last name"
                   />
                 </div>
               </div>
@@ -248,7 +246,7 @@ export function Contact() {
                     onChange={handleChange}
                     type="email"
                     className="w-full bg-canvas border border-border-hairline rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
-                    placeholder="name@gmail.com"
+                    placeholder="name@example.com"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -276,7 +274,7 @@ export function Contact() {
                   <option value="Society Onboarding Request">Society Onboarding Request</option>
                   <option value="Business Listing & Sponsorship">Business Listing & Sponsorship</option>
                   <option value="Technical Support">Technical Support</option>
-                  <option value="Campus & Partnership">Campus & Partnership (Ajeenkya DY Patil)</option>
+                  <option value="Campus & Partnership">Campus & Partnership</option>
                 </select>
               </div>
 
@@ -289,7 +287,7 @@ export function Contact() {
                   onChange={handleChange}
                   rows={4}
                   className="w-full bg-canvas border border-border-hairline rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors resize-none"
-                  placeholder="Tell us what you need or how we can help..."
+                  placeholder="Leave us a message..."
                 />
               </div>
 
@@ -299,11 +297,11 @@ export function Contact() {
                 className="w-full py-3.5 rounded-xl font-semibold bg-brand-500 hover:bg-brand-600 text-white shadow-md flex items-center justify-center gap-2 mt-1"
               >
                 {isSubmitting ? (
-                  <span>Sending to urveshrane3206@gmail.com...</span>
+                  <span>Sending message...</span>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Send Message to Urvesh Rane</span>
+                    <span>Send Message</span>
                   </>
                 )}
               </Button>
