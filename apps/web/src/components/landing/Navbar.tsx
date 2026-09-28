@@ -60,7 +60,14 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3">
+          <Link
+            href="/emergency"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-900 hover:bg-red-100 transition-colors"
+          >
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span>SOS</span>
+          </Link>
           <ThemeToggle />
           <Link href="/login">
             <Button variant="ghost" className="text-text-secondary hover:text-text-primary">
@@ -109,6 +116,14 @@ export function Navbar() {
             ))}
             <div className="h-px w-full bg-border-hairline my-2" />
             <div className="flex flex-col gap-2">
+              <Link
+                href="/emergency"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-red-500 text-white font-bold text-sm shadow-md"
+              >
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <span>Emergency SOS Center</span>
+              </Link>
               <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button variant="outline" className="w-full justify-center">
                   Sign In

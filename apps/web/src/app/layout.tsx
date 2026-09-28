@@ -4,6 +4,7 @@ import '@/styles/globals.css';
 import { APP_CONFIG } from '@/config/app';
 import { Providers } from '@/providers';
 import { Toaster } from 'react-hot-toast';
+import { GlobalSosButton } from '@/components/emergency/GlobalSosButton';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans`}>
         <Providers>
           {children}
+          <GlobalSosButton />
           <Toaster position="bottom-right" />
         </Providers>
       </body>
