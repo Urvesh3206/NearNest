@@ -184,61 +184,88 @@ export default function EventsPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl flex flex-col max-h-[90vh] text-gray-900 dark:text-white"
           >
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-              <h2 className="text-xl font-bold">Create New Event</h2>
-              <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create New Event</h2>
+              <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-5 flex-1">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
-                <input type="text" className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Summer BBQ Party" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Event Title</label>
+                <input
+                  type="text"
+                  className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  placeholder="e.g. Summer BBQ Party"
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select className="w-full border rounded-xl p-3 bg-white outline-none">
-                    {categories.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Category</label>
+                  <select className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors cursor-pointer">
+                    {categories.filter(c => c !== "All").map(c => (
+                      <option key={c} value={c} className="bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
+                        {c}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
-                  <input type="datetime-local" className="w-full border rounded-xl p-3 outline-none" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors [color-scheme:light] dark:[color-scheme:dark]"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input type="text" className="w-full border rounded-xl p-3 outline-none" placeholder="e.g. Community Clubhouse" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Location</label>
+                <input
+                  type="text"
+                  className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  placeholder="e.g. Community Clubhouse"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea rows={4} className="w-full border rounded-xl p-3 outline-none resize-none" placeholder="What's this event about?"></textarea>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Description</label>
+                <textarea
+                  rows={4}
+                  className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-colors"
+                  placeholder="What's this event about?"
+                ></textarea>
               </div>
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Attendees</label>
-                  <input type="number" className="w-full border rounded-xl p-3 outline-none" placeholder="Optional" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Max Attendees</label>
+                  <input
+                    type="number"
+                    className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    placeholder="Optional"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Price</label>
-                  <input type="text" className="w-full border rounded-xl p-3 outline-none" placeholder="Free or amount" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5">Ticket Price</label>
+                  <input
+                    type="text"
+                    className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl p-3 placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    placeholder="Free or amount"
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button onClick={() => setShowCreateModal(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-700 hover:bg-gray-200">
+            <div className="p-6 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end space-x-3">
+              <button onClick={() => setShowCreateModal(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
                 Cancel
               </button>
-              <button onClick={() => setShowCreateModal(false)} className="px-6 py-2.5 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700">
+              <button onClick={() => setShowCreateModal(false)} className="px-6 py-2.5 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
                 Publish Event
               </button>
             </div>
