@@ -64,21 +64,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const login = (email: string, name: string = 'Community Member', role: AuthUser['role'] = 'RESIDENT') => {
+  const login = (email: string, name?: string, role: AuthUser['role'] = 'RESIDENT') => {
+    const cleanName = name && name.trim().length > 0 
+      ? name.trim() 
+      : email.split('@')[0].replace(/[0-9_.-]+/g, ' ').trim().replace(/\b\w/g, l => l.toUpperCase()) || 'Resident';
+
     const newUser: AuthUser = {
       ...DEFAULT_USER,
       uid: `usr_${Date.now()}`,
       email,
-      name,
+      name: cleanName,
+      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}&backgroundColor=059669`,
       role,
     };
     setUser(newUser);
     localStorage.setItem('nearnest_profile', JSON.stringify(newUser));
-    toast.success(`Welcome back, ${name}!`);
+    toast.success(`Welcome to NearNest, ${cleanName}!`);
   };
 
   const loginWithGoogle = async () => {
-    login('user.google@gmail.com', 'Google User', 'RESIDENT');
+    login('user.google@gmail.com', 'Resident Member', 'RESIDENT');
   };
 
   const updateProfile = (updatedData: Partial<AuthUser>) => {

@@ -85,7 +85,7 @@ export default function SignupPage() {
   };
 
   const handleInstantVerifyAndEnter = () => {
-    login(email || "urveshrane3206@gmail.com", name || "Urvesh Rane", mapRole(selectedRole));
+    login(email, name, mapRole(selectedRole));
     router.push('/feed');
   };
 

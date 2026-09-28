@@ -29,8 +29,8 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const name = data.email.split('@')[0];
-      login(data.email, name.charAt(0).toUpperCase() + name.slice(1));
+      const cleanName = data.email.split('@')[0].replace(/[0-9_.-]+/g, ' ').trim().replace(/\b\w/g, l => l.toUpperCase()) || 'Resident Member';
+      login(data.email, cleanName);
       router.push('/feed');
     } catch (error) {
       console.error(error);
@@ -42,7 +42,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      login('google.resident@nearnest.com', 'Alex Rivera', 'RESIDENT');
+      login('google.resident@nearnest.com', 'Resident Member', 'RESIDENT');
       router.push('/feed');
     } catch (error) {
       console.error(error);
