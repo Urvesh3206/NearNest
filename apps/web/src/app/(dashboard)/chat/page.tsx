@@ -31,10 +31,21 @@ import {
   FileText,
   MessageSquare,
   Sparkles,
-  Volume2
+  Volume2,
+  FileCheck,
+  Eye,
+  Trash2
 } from "lucide-react";
 import { Badge, Button, Input, Modal } from "@/components/ui";
 import toast from "react-hot-toast";
+
+type StagedAttachment = {
+  file: File;
+  name: string;
+  size: string;
+  type: "image" | "document";
+  previewUrl: string;
+};
 
 type Message = {
   id: string;
@@ -252,7 +263,24 @@ const initialMessagesRecord: Record<string, Message[]> = {
   ],
 };
 
-const EMOJIS = ["👍", "❤️", "👏", "🔥", "😂", "🎉", "🌱", "🚀", "🚨"];
+const EMOJI_CATEGORIES = [
+  {
+    name: "Smileys",
+    emojis: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "😉", "😌", "😍", "🥰", "😘", "😎", "🥳", "🤩", "🤔"],
+  },
+  {
+    name: "Gestures",
+    emojis: ["👍", "👎", "👏", "🙌", "🤝", "✌️", "🤞", "👊", "✊", "🙏", "🖐️", "👌", "👈", "👉", "👆", "👇", "💪"],
+  },
+  {
+    name: "Community",
+    emojis: ["🏢", "🏠", "🏡", "🌿", "🌱", "🌸", "🌳", "🚗", "🚲", "🛒", "📦", "🔑", "📢", "🚨", "🔔", "💡", "🔧", "⚽", "🏸", "☕"],
+  },
+  {
+    name: "Hearts",
+    emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "❣️", "💕", "🔥", "💯", "✨", "⭐", "🎉", "🎊", "💰"],
+  },
+];
 
 // Web Audio sound synthesizer for realistic chime
 function playNotificationChime(isOutgoing = true) {
@@ -296,7 +324,10 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [showInfoSidebar, setShowInfoSidebar] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [activeEmojiTab, setActiveEmojiTab] = useState("Smileys");
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [stagedAttachment, setStagedAttachment] = useState<StagedAttachment | null>(null);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -316,7 +347,9 @@ export default function ChatPage() {
   const [isMobileListOpen, setIsMobileListOpen] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -339,6 +372,7 @@ export default function ChatPage() {
   const handleSelectConv = (conv: Conversation) => {
     setActiveConv(conv);
     setReplyingTo(null);
+    setStagedAttachment(null);
     setMessages(initialMessagesRecord[conv.id] || [
       {
         id: `welcome_${conv.id}`,
@@ -363,7 +397,7 @@ export default function ChatPage() {
   });
 
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() && !stagedAttachment) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -371,6 +405,10 @@ export default function ChatPage() {
       senderName: "You",
       senderRole: "Resident",
       text: inputValue.trim(),
+      imageUrl: stagedAttachment?.type === "image" ? stagedAttachment.previewUrl : undefined,
+      attachmentType: stagedAttachment ? stagedAttachment.type : undefined,
+      attachmentName: stagedAttachment ? stagedAttachment.name : undefined,
+      attachmentMeta: stagedAttachment ? stagedAttachment.size : undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "sent",
       isOutgoing: true,
@@ -385,7 +423,9 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, newMessage]);
     setInputValue("");
     setReplyingTo(null);
+    setStagedAttachment(null);
     setShowEmojiPicker(false);
+    setShowAttachMenu(false);
     playNotificationChime(true);
 
     setTimeout(() => {
@@ -403,7 +443,7 @@ export default function ChatPage() {
 
     setTimeout(() => {
       setIsTyping(false);
-      let replyText = "Got it! See you soon.";
+      let replyText = "Got it! Thanks for sharing.";
       if (activeConv.id === "c1") {
         replyText = "We are discussing the new society solar panels and garden landscaping!";
       } else if (activeConv.id === "c2") {
@@ -461,31 +501,48 @@ export default function ChatPage() {
     );
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File Upload Handlers with instant Preview
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const fakeUrl = URL.createObjectURL(file);
-    const isImg = file.type.startsWith("image");
+    const previewUrl = URL.createObjectURL(file);
+    const sizeKb = (file.size / 1024).toFixed(1);
 
-    const fileMsg: Message = {
-      id: Date.now().toString(),
-      senderId: "me",
-      senderName: "You",
-      senderRole: "Resident",
-      text: isImg ? `Shared photo: ${file.name}` : `Shared document: ${file.name}`,
-      imageUrl: isImg ? fakeUrl : undefined,
-      attachmentType: isImg ? "image" : "document",
-      attachmentName: file.name,
-      attachmentMeta: `${(file.size / 1024).toFixed(1)} KB`,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      status: "read",
-      isOutgoing: true,
-    };
+    setStagedAttachment({
+      file,
+      name: file.name,
+      size: `${sizeKb} KB`,
+      type: "image",
+      previewUrl,
+    });
+    setShowAttachMenu(false);
+    e.target.value = "";
+    toast.success(`Photo selected: ${file.name}`);
+    textInputRef.current?.focus();
+  };
 
-    setMessages((prev) => [...prev, fileMsg]);
-    playNotificationChime(true);
-    toast.success(`Sent ${file.name}`);
+  const handleDocSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const sizeKb = (file.size / 1024).toFixed(1);
+    setStagedAttachment({
+      file,
+      name: file.name,
+      size: `${sizeKb} KB`,
+      type: "document",
+      previewUrl: "",
+    });
+    setShowAttachMenu(false);
+    e.target.value = "";
+    toast.success(`Document attached: ${file.name}`);
+    textInputRef.current?.focus();
+  };
+
+  const handleEmojiClick = (emoji: string) => {
+    setInputValue((prev) => prev + emoji);
+    textInputRef.current?.focus();
   };
 
   const handleSendVoiceNote = () => {
@@ -805,7 +862,7 @@ export default function ChatPage() {
 
                 <div className="relative max-w-[85%] sm:max-w-[70%]">
                   
-                  {/* Quoted Message (if replying) */}
+                  {/* Quoted Message */}
                   {msg.replyTo && (
                     <div className="mb-1 p-2 rounded-xl bg-surface-subtle/90 border-l-4 border-brand-500 text-[11px] text-text-secondary truncate">
                       <span className="font-bold text-brand-600 block">{msg.replyTo.senderName}</span>
@@ -813,9 +870,9 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* Message Bubble Body */}
+                  {/* Message Bubble */}
                   <div
-                    className={`p-3.5 rounded-2xl shadow-sm space-y-1.5 text-xs leading-relaxed ${
+                    className={`p-3.5 rounded-2xl shadow-sm space-y-2 text-xs leading-relaxed ${
                       msg.isOutgoing
                         ? "bg-brand-500 text-white rounded-br-none shadow-brand-500/20"
                         : "bg-surface border border-border-hairline text-text-primary rounded-bl-none"
@@ -823,19 +880,28 @@ export default function ChatPage() {
                   >
                     {/* Attached Photo */}
                     {msg.imageUrl && (
-                      <div className="rounded-xl overflow-hidden border border-white/20 max-h-64 mb-2 shadow-sm">
-                        <img src={msg.imageUrl} alt="Attached media" className="w-full object-cover" />
+                      <div className="rounded-xl overflow-hidden border border-white/20 max-h-72 mb-1.5 shadow-sm">
+                        <img src={msg.imageUrl} alt="Attached photo" className="w-full object-cover" />
                       </div>
                     )}
 
-                    {/* Attached Document */}
+                    {/* Attached Document Card */}
                     {msg.attachmentType === "document" && (
-                      <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/10 dark:bg-white/10 mb-1.5">
-                        <FileText className="w-5 h-5" />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-bold truncate text-[11px]">{msg.attachmentName}</p>
-                          <span className="text-[10px] opacity-80">{msg.attachmentMeta}</span>
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 dark:bg-white/10 mb-1 border border-white/10">
+                        <div className="p-2 rounded-lg bg-brand-600 text-white">
+                          <FileText className="w-5 h-5" />
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold truncate text-xs">{msg.attachmentName}</p>
+                          <span className="text-[10px] opacity-80">{msg.attachmentMeta} • PDF Document</span>
+                        </div>
+                        <button
+                          onClick={() => toast.success(`Opened ${msg.attachmentName}`)}
+                          className="p-1.5 rounded-lg hover:bg-black/10 transition-colors"
+                          title="Open Document"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
                       </div>
                     )}
 
@@ -852,7 +918,7 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
 
                     <div
                       className={`flex items-center justify-end gap-1 text-[10px] pt-0.5 ${
@@ -953,6 +1019,36 @@ export default function ChatPage() {
         {/* ========================================================================= */}
         <div className="p-3 sm:p-4 bg-surface border-t border-border-hairline relative">
           
+          {/* Staged Attachment Preview Chip */}
+          {stagedAttachment && (
+            <div className="mb-2 p-2.5 px-3 rounded-2xl bg-brand-50/80 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 flex items-center justify-between animate-fade-in shadow-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                {stagedAttachment.type === "image" ? (
+                  <img
+                    src={stagedAttachment.previewUrl}
+                    alt="Preview"
+                    className="w-10 h-10 rounded-xl object-cover border border-brand-300"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-600 flex items-center justify-center font-bold">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-text-primary truncate">{stagedAttachment.name}</p>
+                  <span className="text-[10px] text-text-secondary">{stagedAttachment.size} • Ready to send</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setStagedAttachment(null)}
+                className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-text-tertiary hover:text-red-600 transition-colors"
+                title="Remove attachment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Replying Banner */}
           {replyingTo && (
             <div className="mb-2 p-2 px-3 rounded-xl bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 flex items-center justify-between text-xs animate-fade-in">
@@ -970,25 +1066,107 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Emoji Popover */}
-          {showEmojiPicker && (
-            <div className="absolute bottom-full left-4 mb-2 p-2.5 bg-surface border border-border-hairline rounded-2xl shadow-2xl flex items-center gap-2 z-30 animate-fade-in">
-              {EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    setInputValue((prev) => prev + emoji);
-                    setShowEmojiPicker(false);
-                  }}
-                  className="p-1 hover:scale-130 transition-transform text-lg"
-                >
-                  {emoji}
-                </button>
-              ))}
+          {/* Attachment Type Menu Popover */}
+          {showAttachMenu && (
+            <div className="absolute bottom-full left-12 mb-2 p-2 bg-surface border border-border-hairline rounded-2xl shadow-2xl z-40 flex flex-col gap-1 w-52 animate-fade-in">
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-surface-subtle text-xs font-semibold text-text-primary transition-colors text-left"
+              >
+                <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="block leading-none">Photo / Image</span>
+                  <span className="text-[10px] text-text-tertiary font-normal">JPG, PNG, GIF, WEBP</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => docInputRef.current?.click()}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-surface-subtle text-xs font-semibold text-text-primary transition-colors text-left"
+              >
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="block leading-none">Document / PDF</span>
+                  <span className="text-[10px] text-text-tertiary font-normal">PDF, DOC, DOCX, TXT</span>
+                </div>
+              </button>
             </div>
           )}
 
-          {/* Composer Box */}
+          {/* Categorized Rich Emoji Picker Popover */}
+          {showEmojiPicker && (
+            <div className="absolute bottom-full left-4 mb-2 p-3 bg-surface border border-border-hairline rounded-3xl shadow-2xl z-40 w-72 sm:w-80 animate-fade-in">
+              <div className="flex items-center justify-between pb-2 border-b border-border-hairline mb-2">
+                <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                  <Smile className="w-3.5 h-3.5 text-brand-500" />
+                  <span>Choose Emoji</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(false)}
+                  className="p-1 text-text-tertiary hover:text-text-primary rounded-lg"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Emoji Category Tabs */}
+              <div className="flex items-center gap-1 mb-2">
+                {EMOJI_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    onClick={() => setActiveEmojiTab(cat.name)}
+                    className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                      activeEmojiTab === cat.name
+                        ? "bg-brand-500 text-white"
+                        : "bg-surface-subtle text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Emoji Grid */}
+              <div className="grid grid-cols-7 gap-1 max-h-40 overflow-y-auto p-1">
+                {EMOJI_CATEGORIES.find((c) => c.name === activeEmojiTab)?.emojis.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleEmojiClick(emoji)}
+                    className="p-1.5 hover:scale-135 hover:bg-surface-subtle rounded-lg transition-transform text-lg flex items-center justify-center"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Hidden File Inputs */}
+          <input
+            type="file"
+            ref={photoInputRef}
+            onChange={handlePhotoSelect}
+            className="hidden"
+            accept="image/*"
+          />
+          <input
+            type="file"
+            ref={docInputRef}
+            onChange={handleDocSelect}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.txt"
+          />
+
+          {/* Composer Input Bar */}
           {isRecording ? (
             <div className="flex items-center justify-between bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-900 rounded-2xl p-2 px-4 animate-pulse">
               <div className="flex items-center gap-2 text-red-600 text-xs font-bold">
@@ -997,6 +1175,7 @@ export default function ChatPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setIsRecording(false)}
                   className="p-1.5 text-text-secondary hover:text-text-primary text-xs"
                 >
@@ -1016,8 +1195,13 @@ export default function ChatPage() {
               
               <button
                 type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="p-1.5 text-text-tertiary hover:text-brand-500 hover:bg-surface rounded-xl transition-colors"
+                onClick={() => {
+                  setShowEmojiPicker(!showEmojiPicker);
+                  setShowAttachMenu(false);
+                }}
+                className={`p-1.5 rounded-xl transition-colors ${
+                  showEmojiPicker ? "bg-brand-500 text-white" : "text-text-tertiary hover:text-brand-500 hover:bg-surface"
+                }`}
                 title="Add Emoji"
               >
                 <Smile className="w-4 h-4" />
@@ -1025,22 +1209,20 @@ export default function ChatPage() {
 
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 text-text-tertiary hover:text-brand-500 hover:bg-surface rounded-xl transition-colors"
-                title="Attach Photo or File"
+                onClick={() => {
+                  setShowAttachMenu(!showAttachMenu);
+                  setShowEmojiPicker(false);
+                }}
+                className={`p-1.5 rounded-xl transition-colors ${
+                  showAttachMenu ? "bg-brand-500 text-white" : "text-text-tertiary hover:text-brand-500 hover:bg-surface"
+                }`}
+                title="Attach Photo or Document"
               >
                 <Paperclip className="w-4 h-4" />
               </button>
 
               <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx"
-              />
-
-              <input
+                ref={textInputRef}
                 type="text"
                 placeholder={`Type a message to ${activeConv.name}...`}
                 className="flex-1 bg-transparent border-none outline-none text-xs text-text-primary placeholder:text-text-tertiary px-2"
@@ -1049,7 +1231,7 @@ export default function ChatPage() {
                 onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               />
 
-              {inputValue.trim() ? (
+              {inputValue.trim() || stagedAttachment ? (
                 <button
                   type="button"
                   onClick={handleSendMessage}
