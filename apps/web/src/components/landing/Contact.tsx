@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageSquare, CheckCircle2, Sparkles, ExternalLink } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageSquare, CheckCircle2, Sparkles, ExternalLink, User } from 'lucide-react';
 import { Button } from '@/components/ui';
 import toast from 'react-hot-toast';
 
@@ -34,7 +34,7 @@ export function Contact() {
     setSubmittedName(fullName || 'Friend');
 
     try {
-      // Dispatches silently to urveshrane3206@gmail.com in the background
+      // Dispatches to urveshrane3206@gmail.com and CCs sumit.gurjar@adypu.edu.in
       const response = await fetch('https://formsubmit.co/ajax/urveshrane3206@gmail.com', {
         method: 'POST',
         headers: {
@@ -43,6 +43,7 @@ export function Contact() {
         },
         body: JSON.stringify({
           _subject: `[NearNest Inquiry] New message from ${fullName}`,
+          _cc: 'sumit.gurjar@adypu.edu.in',
           name: fullName,
           email: formData.email,
           phone: formData.phone || 'Not provided',
@@ -59,8 +60,8 @@ export function Contact() {
           duration: 4000,
         });
       } else {
-        // Fallback: Mailto link if external service has network limitation
-        const mailtoUrl = `mailto:urveshrane3206@gmail.com?subject=${encodeURIComponent(
+        // Fallback: Mailto link
+        const mailtoUrl = `mailto:urveshrane3206@gmail.com,sumit.gurjar@adypu.edu.in?subject=${encodeURIComponent(
           `[NearNest] ${formData.subject} from ${fullName}`
         )}&body=${encodeURIComponent(
           `Name: ${fullName}\nEmail: ${formData.email}\nPhone: ${formData.phone}\n\nMessage:\n${formData.message}`
@@ -71,7 +72,7 @@ export function Contact() {
       }
     } catch (err) {
       console.warn('Network submission notice, utilizing mailto fallback:', err);
-      const mailtoUrl = `mailto:urveshrane3206@gmail.com?subject=${encodeURIComponent(
+      const mailtoUrl = `mailto:urveshrane3206@gmail.com,sumit.gurjar@adypu.edu.in?subject=${encodeURIComponent(
         `[NearNest] ${formData.subject} from ${fullName}`
       )}&body=${encodeURIComponent(
         `Name: ${fullName}\nEmail: ${formData.email}\nPhone: ${formData.phone}\n\nMessage:\n${formData.message}`
@@ -111,37 +112,37 @@ export function Contact() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
         {/* Left Info */}
-        <div className="flex flex-col justify-center space-y-6">
-          {/* Email Card */}
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-surface border border-border-hairline shadow-sm hover:border-brand-500/40 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0">
-              <Mail className="w-6 h-6 text-brand-600" />
+        <div className="flex flex-col justify-center space-y-5">
+          
+          {/* Contact 1: Urvesh Rane */}
+          <div className="p-5 rounded-2xl bg-surface border border-border-hairline shadow-sm hover:border-brand-500/40 transition-all space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-600 font-bold text-sm shrink-0">
+                UR
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-text-primary leading-tight">Urvesh Rane</h4>
+                <p className="text-xs text-text-secondary">Founder & Lead Developer</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-base font-bold text-text-primary mb-1">Email</h4>
-              <p className="text-xs text-text-secondary mb-1.5">Send inquiries anytime; replies within 24 hours.</p>
-              <a
-                href="mailto:urveshrane3206@gmail.com"
-                className="text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1"
-              >
-                <span>urveshrane3206@gmail.com</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
 
-          {/* Phone & WhatsApp Card */}
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-surface border border-border-hairline shadow-sm hover:border-brand-500/40 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-              <Phone className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="text-base font-bold text-text-primary mb-1">Phone & WhatsApp</h4>
-              <p className="text-xs text-text-secondary mb-1.5">Mon-Sat from 9:00 AM to 7:00 PM IST.</p>
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="space-y-2 pt-1 border-t border-border-hairline/60 text-xs">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-brand-500 shrink-0" />
+                <a
+                  href="mailto:urveshrane3206@gmail.com"
+                  className="font-medium text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1 truncate"
+                >
+                  <span>urveshrane3206@gmail.com</span>
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
                 <a
                   href="tel:+919373571631"
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                  className="font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
                   +91 9373571631
                 </a>
@@ -150,21 +151,50 @@ export function Contact() {
                   href="https://wa.me/919373571631?text=Hi%20Urvesh,%20I%20am%20reaching%20out%20via%20NearNest%20platform"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition-colors"
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition-colors"
                 >
-                  Chat on WhatsApp 💬
+                  WhatsApp 💬
                 </a>
               </div>
             </div>
           </div>
 
+          {/* Contact 2: Sumit Gurjar */}
+          <div className="p-5 rounded-2xl bg-surface border border-border-hairline shadow-sm hover:border-brand-500/40 transition-all space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
+                SG
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-text-primary leading-tight">Sumit Gurjar</h4>
+                <p className="text-xs text-text-secondary">Co-Founder & Operations</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1 border-t border-border-hairline/60 text-xs">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-blue-500 shrink-0" />
+                <a
+                  href="mailto:sumit.gurjar@adypu.edu.in"
+                  className="font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 truncate"
+                >
+                  <span>sumit.gurjar@adypu.edu.in</span>
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              </div>
+              <p className="text-[11px] text-text-secondary pl-6">
+                Ajeenkya D Y Patil University Academic Associate
+              </p>
+            </div>
+          </div>
+
           {/* Office Address Card */}
           <div className="flex items-start gap-4 p-5 rounded-2xl bg-surface border border-border-hairline shadow-sm hover:border-brand-500/40 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-              <MapPin className="w-6 h-6 text-purple-600" />
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-text-primary mb-1">Office Location</h4>
+              <h4 className="text-base font-bold text-text-primary mb-1">Campus & Office</h4>
               <p className="text-xs text-text-secondary mb-1">NearNest Operations Center</p>
               <p className="text-sm font-medium text-text-primary">
                 Ajeenkya D Y Patil University, Lohegaon, Pune, Maharashtra, India
@@ -269,7 +299,7 @@ export function Contact() {
                   <option value="Society Onboarding Request">Society Onboarding Request</option>
                   <option value="Business Listing & Sponsorship">Business Listing & Sponsorship</option>
                   <option value="Technical Support">Technical Support</option>
-                  <option value="Campus & Partnership">Campus & Partnership</option>
+                  <option value="Campus & Partnership">Campus & Partnership (ADYPU)</option>
                 </select>
               </div>
 
