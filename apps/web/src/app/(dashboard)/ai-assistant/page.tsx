@@ -2,15 +2,32 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Send, User, Sparkles, AlertTriangle, Building, Wrench, Search, MapPin, Loader2, X } from 'lucide-react';
-import { Button, Input, Card, Avatar, Badge } from '@/components/ui';
+import { 
+  Bot, 
+  Send, 
+  User, 
+  Sparkles, 
+  AlertTriangle, 
+  Building, 
+  Wrench, 
+  Search, 
+  MapPin, 
+  Loader2, 
+  Copy, 
+  RotateCcw,
+  Check,
+  Shield,
+  Zap
+} from 'lucide-react';
+import { Button, Card, Badge } from '@/components/ui';
+import toast from 'react-hot-toast';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  metadata?: any;
+  source?: string;
 }
 
 const PRESET_PROMPTS = [
@@ -25,16 +42,18 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 'msg-0',
     role: 'assistant',
-    content: "Hi! I'm NeighbourBot, your neighborhood AI concierge. How can I help you today? You can ask me about local services, community notices, society rules, or anything else about the neighborhood.",
-    timestamp: new Date()
-  }
+    content: "👋 Hello! I am **NearNest AI (NeighbourBot)**, powered by live neighborhood intelligence. How can I assist you today?\n\nYou can ask me about local service providers, society maintenance schedules, emergency safety, or draft community announcements.",
+    timestamp: new Date(),
+  },
 ];
 
 export default function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,73 +63,54 @@ export default function AIAssistantPage() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const simulateAIResponse = (prompt: string) => {
+  const handleSendMessage = async (text: string = inputValue) => {
+    const query = text.trim();
+    if (!query || isTyping) return;
+
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: query,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInputValue('');
     setIsTyping(true);
-    let responseText = "I can help with that. ";
-    let metadata: any = null;
 
-    if (prompt.includes('plumber')) {
-      responseText = "Here are the top-rated plumbers in the neighborhood based on community reviews:";
-      metadata = {
-        type: 'business_list',
-        items: [
-          { name: "FixIt Plumbing Services", rating: 4.9, distance: "0.5 miles", phone: "555-0101" },
-          { name: "Joe's Pipes & Drains", rating: 4.7, distance: "1.2 miles", phone: "555-0102" }
-        ]
-      };
-    } else if (prompt.includes('power cuts')) {
-      responseText = "Yes, there is a scheduled maintenance notice from the Electricity Board.";
-      metadata = {
-        type: 'notice',
-        title: "Power Outage - Sector 4",
-        date: "Tomorrow, 2:00 PM - 5:00 PM",
-        severity: "High"
-      };
-    } else if (prompt.includes('restaurants')) {
-       responseText = "Today's special offers from local restaurants:";
-       metadata = {
-         type: 'business_list',
-         items: [
-           { name: "Spice Route", rating: 4.8, distance: "0.3 miles", offer: "20% off on dine-in" },
-           { name: "The Burger Joint", rating: 4.5, distance: "0.8 miles", offer: "Free fries with meals" }
-         ]
-       }
-    } else if (prompt.includes('meeting')) {
-      responseText = "Here is a summary of the latest society meeting minutes:\n\n*   **Maintenance Fees**: Agreed to keep fees unchanged for the next quarter.\n*   **Security**: Approved budget for new CCTV cameras at the main gate.\n*   **Community Events**: The annual summer fair is scheduled for next month. Volunteers needed.";
-    } else if (prompt.includes('pet')) {
-      responseText = "Here is a draft for your lost pet announcement:\n\n**LOST PET ALERT!**\n\nI have lost my dog near [Location]. He is a [Breed], wearing a [Color] collar. He answers to the name [Name]. If you have seen him, please contact me immediately at [Your Phone Number]. Thank you!";
-    } else {
-      responseText = "That sounds interesting! Let me check the neighborhood hub for more details on '" + prompt + "'. I am still learning, but I'll do my best to provide accurate information based on community data.";
-    }
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: query, messages: [...messages, userMsg] }),
+      });
 
-    setTimeout(() => {
-      setMessages(prev => [
+      const data = await response.json();
+      const aiContent = data.content || "I couldn't process that request right now. Please try asking again!";
+
+      const aiMsg: Message = {
+        id: `ai-${Date.now()}`,
+        role: 'assistant',
+        content: aiContent,
+        timestamp: new Date(),
+        source: data.source,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      console.error('AI chat error:', err);
+      setMessages((prev) => [
         ...prev,
         {
-          id: `msg-${Date.now()}`,
+          id: `ai-${Date.now()}`,
           role: 'assistant',
-          content: responseText,
+          content: "I ran into a temporary network issue. Please check your connection and try again.",
           timestamp: new Date(),
-          metadata
-        }
+        },
       ]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
-  };
-
-  const handleSendMessage = (text: string = inputValue) => {
-    if (!text.trim()) return;
-    
-    const newUserMsg: Message = {
-      id: `msg-${Date.now()}`,
-      role: 'user',
-      content: text,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, newUserMsg]);
-    setInputValue('');
-    simulateAIResponse(text);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -120,178 +120,168 @@ export default function AIAssistantPage() {
     }
   };
 
-  const renderMessageContent = (msg: Message) => {
-    if (msg.role === 'user') {
-      return <p className="text-white whitespace-pre-wrap">{msg.content}</p>;
-    }
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast.success('Response copied to clipboard');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
-    // Simple markdown renderer for bold and lists
-    const formattedContent = msg.content
-      .split('\n')
-      .map((line, i) => {
-        let formattedLine = line;
-        // Bold
-        const boldRegex = /\*\*(.*?)\*\*/g;
-        if (boldRegex.test(line)) {
-          const parts = line.split(boldRegex);
-          return (
-            <p key={i} className="mb-2 last:mb-0">
-              {parts.map((part, j) => j % 2 === 1 ? <strong key={j} className="font-bold">{part}</strong> : part)}
-            </p>
-          );
-        }
-        if (line.startsWith('* ')) {
-          return <li key={i} className="ml-4 list-disc">{line.substring(2)}</li>;
-        }
-        return <p key={i} className="mb-2 last:mb-0">{line}</p>;
-      });
-
-    return (
-      <div className="text-text-primary">
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          {formattedContent}
-        </div>
-        
-        {msg.metadata?.type === 'business_list' && (
-          <div className="mt-4 space-y-3">
-            {msg.metadata.items.map((item: any, idx: number) => (
-              <div key={idx} className="bg-surface border border-border-hairline rounded-lg p-3 flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-text-primary">{item.name}</div>
-                  <div className="text-sm text-text-secondary flex items-center gap-2 mt-1">
-                    <span className="flex items-center text-yellow-500"><Sparkles className="w-3 h-3 mr-1"/> {item.rating}</span>
-                    <span>•</span>
-                    <span className="flex items-center"><MapPin className="w-3 h-3 mr-1"/> {item.distance}</span>
-                  </div>
-                  {item.offer && (
-                    <div className="text-sm text-brand-600 mt-1 font-medium">{item.offer}</div>
-                  )}
-                </div>
-                {item.phone && (
-                  <Button variant="outline" size="sm">Call</Button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {msg.metadata?.type === 'notice' && (
-          <div className="mt-4">
-            <div className="bg-coral-50 border border-coral-200 dark:bg-coral-950/30 dark:border-coral-900 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="text-coral-500 w-5 h-5" />
-                  <h4 className="font-semibold text-coral-900 dark:text-coral-100">{msg.metadata.title}</h4>
-                </div>
-                <Badge variant="danger">{msg.metadata.severity}</Badge>
-              </div>
-              <p className="mt-2 text-sm text-coral-800 dark:text-coral-200">{msg.metadata.date}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  const handleResetChat = () => {
+    setMessages(INITIAL_MESSAGES);
+    toast.success('Chat history cleared');
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] flex flex-col bg-surface rounded-2xl border border-border-hairline overflow-hidden shadow-sm">
+    <div className="max-w-4xl mx-auto space-y-4 pb-12">
       {/* Header */}
-      <div className="p-4 border-b border-border-hairline flex items-center justify-between bg-surface-subtle">
-        <div className="flex items-center gap-3">
-          <div className="bg-brand-500 p-2 rounded-full">
-            <Bot className="w-6 h-6 text-white" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-surface border border-border-hairline shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-500 to-teal-500 text-white flex items-center justify-center font-bold shadow-md shadow-brand-500/20">
+            <Bot className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-text-primary">NeighbourBot</h1>
-            <p className="text-xs text-text-secondary">AI Neighborhood Concierge</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-text-primary">NearNest AI Concierge</h1>
+              <Badge variant="success" size="sm" className="text-[10px] font-semibold py-0.5">
+                Live AI Active
+              </Badge>
+            </div>
+            <p className="text-xs text-text-secondary mt-0.5">
+              Powered by advanced neighborhood knowledge & Google Gemini AI.
+            </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetChat}
+            className="text-xs rounded-xl flex items-center gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Clear Chat</span>
+          </Button>
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        <AnimatePresence>
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
-            >
-              <div className="flex-shrink-0">
-                {msg.role === 'user' ? (
-                  <Avatar name="User" className="w-8 h-8" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-brand-600 dark:text-brand-400">
-                    <Bot className="w-5 h-5" />
+      {/* Main Chat Stream */}
+      <div className="bg-surface border border-border-hairline rounded-3xl p-4 sm:p-6 shadow-card h-[500px] flex flex-col justify-between overflow-hidden">
+        
+        {/* Messages Scroll Area */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          {messages.map((msg) => {
+            const isUser = msg.role === 'user';
+            return (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+              >
+                {!isUser && (
+                  <div className="w-8 h-8 rounded-xl bg-brand-500/15 text-brand-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-brand-500/20">
+                    <Bot className="w-4 h-4" />
                   </div>
                 )}
-              </div>
-              <div className={`p-4 rounded-2xl ${msg.role === 'user' ? 'bg-brand-600 text-white rounded-tr-sm' : 'bg-surface-subtle border border-border-hairline rounded-tl-sm'}`}>
-                {renderMessageContent(msg)}
-              </div>
-            </motion.div>
-          ))}
+
+                <div
+                  className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed max-w-[85%] sm:max-w-[75%] space-y-2 relative group shadow-sm ${
+                    isUser
+                      ? 'bg-brand-500 text-white rounded-br-none'
+                      : 'bg-canvas border border-border-hairline text-text-primary rounded-bl-none'
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap font-normal">{msg.content}</div>
+
+                  <div className="flex items-center justify-between pt-1 text-[10px] opacity-70">
+                    <span>
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+
+                    {!isUser && (
+                      <button
+                        onClick={() => handleCopy(msg.content, msg.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-brand-500 p-0.5 flex items-center gap-1"
+                        title="Copy text"
+                      >
+                        {copiedId === msg.id ? (
+                          <Check className="w-3 h-3 text-brand-500" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                        <span>Copy</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {isUser && (
+                  <div className="w-8 h-8 rounded-xl bg-surface-subtle text-text-secondary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-border-hairline">
+                    <User className="w-4 h-4" />
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+
+          {/* Typing Indicator */}
           {isTyping && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-3 max-w-[85%] mr-auto"
+              className="flex items-center gap-2.5 text-xs text-text-tertiary bg-canvas border border-border-hairline p-3 rounded-2xl w-fit"
             >
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-brand-600 dark:text-brand-400">
-                  <Bot className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="p-4 rounded-2xl bg-surface-subtle border border-border-hairline rounded-tl-sm flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-text-secondary" />
-                <span className="text-sm text-text-secondary">NeighbourBot is typing...</span>
-              </div>
+              <Bot className="w-4 h-4 text-brand-500 animate-pulse" />
+              <span>NeighbourBot is thinking...</span>
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-500" />
             </motion.div>
           )}
-        </AnimatePresence>
-        <div ref={messagesEndRef} />
-      </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-border-hairline bg-surface">
-        {messages.length < 3 && (
-          <div className="mb-4 hidden md:flex flex-wrap gap-2">
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Preset Prompt Suggestions */}
+        <div className="pt-3 border-t border-border-hairline mt-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2">
             {PRESET_PROMPTS.map((prompt) => (
               <button
                 key={prompt.id}
                 onClick={() => handleSendMessage(prompt.text)}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-surface-subtle hover:bg-surface-glass border border-border-hairline rounded-full text-text-secondary hover:text-text-primary transition-colors"
+                disabled={isTyping}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-canvas hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-brand-950/40 text-text-secondary hover:text-brand-600 text-xs whitespace-nowrap border border-border-hairline transition-all shrink-0"
               >
-                <prompt.icon className="w-3.5 h-3.5 text-brand-500" />
-                {prompt.text}
+                <prompt.icon className="w-3 h-3 text-brand-500" />
+                <span>{prompt.text}</span>
               </button>
             ))}
           </div>
-        )}
-        <div className="flex gap-2 items-end relative">
-          <div className="flex-1">
-            <textarea
-              className="w-full bg-surface-subtle border border-border-hairline rounded-2xl px-4 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none min-h-[52px] max-h-32"
-              placeholder="Ask me anything about the neighborhood..."
-              rows={1}
+
+          {/* Input Box */}
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Ask anything about your society, verified services, or neighborhood..."
+              className="flex-1 bg-canvas border border-border-hairline rounded-2xl px-4 py-3 text-xs sm:text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
               value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 128)}px`;
-              }}
+              onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
+              disabled={isTyping}
             />
+
+            <Button
+              onClick={() => handleSendMessage()}
+              disabled={!inputValue.trim() || isTyping}
+              className="h-11 px-5 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-semibold flex items-center justify-center gap-1.5 shadow-md transition-transform active:scale-95 shrink-0"
+            >
+              {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <span className="hidden sm:inline">Ask AI</span>
+            </Button>
           </div>
-          <Button 
-            className="rounded-full w-12 h-12 flex items-center justify-center flex-shrink-0 bg-brand-600 hover:bg-brand-700" 
-            onClick={() => handleSendMessage()}
-            disabled={!inputValue.trim() || isTyping}
-          >
-            <Send className="w-5 h-5 text-white" />
-          </Button>
         </div>
+
       </div>
     </div>
   );
