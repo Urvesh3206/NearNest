@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Store, Briefcase, Calendar, ShoppingBag, MessageCircle, Bell, Building2, Settings, HelpCircle, Menu, Search, X, Bot, ShieldAlert, Shield, LogOut } from 'lucide-react';
-import { Avatar, Input, Badge } from '@/components/ui';
+import { Avatar, Input, Badge, NotificationDropdown } from '@/components/ui';
 import { useAuth } from '@/providers/AuthProvider';
 
 const navItems = [
@@ -136,10 +136,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/admin" className="hidden sm:flex relative p-2 text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-full transition-colors" title="Admin">
               <Shield className="h-5 w-5" />
             </Link>
-            <button className="relative p-2 text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-full transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-coral-500"></span>
-            </button>
+
+            {/* Interactive Notification Center */}
+            <NotificationDropdown />
+
             <Link href="/profile" className="flex items-center gap-2">
               <Avatar 
                 src={user?.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop"} 

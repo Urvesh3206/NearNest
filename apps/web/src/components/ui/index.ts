@@ -12,3 +12,4 @@ export * from './Select';
 export * from './Tabs';
 export * from './EmptyState';
 export * from './LocationMap';
+export * from './NotificationDropdown';
