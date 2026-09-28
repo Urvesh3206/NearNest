@@ -130,9 +130,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/ai-assistant" className="hidden sm:flex relative p-2 text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-full transition-colors" title="AI Assistant">
               <Bot className="h-5 w-5" />
             </Link>
-            <Link href="/emergency" className="hidden sm:flex relative p-2 text-coral-600 hover:text-coral-700 hover:bg-coral-50 rounded-full transition-colors" title="Emergency">
-              <ShieldAlert className="h-5 w-5" />
-            </Link>
             <Link href="/admin" className="hidden sm:flex relative p-2 text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-full transition-colors" title="Admin">
               <Shield className="h-5 w-5" />
             </Link>
