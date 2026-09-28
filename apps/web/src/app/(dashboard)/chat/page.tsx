@@ -16,9 +16,7 @@ import {
   CheckCheck,
   Users,
   Image as ImageIcon,
-  MoreVertical,
   Pin,
-  Sparkles,
   ArrowLeft,
   X,
   PhoneOff,
@@ -26,34 +24,27 @@ import {
   VideoOff,
   Bell,
   Download,
-  Flame,
-  ThumbsUp,
-  Heart,
-  Laugh,
   AlertCircle,
   Plus,
   Reply,
   Copy,
-  Trash2,
-  Share2,
-  MapPin,
   FileText,
-  Radio,
-  StopCircle,
-  Hash,
-  MessageSquare
+  MessageSquare,
+  Sparkles,
+  Volume2
 } from "lucide-react";
-import { Avatar, Badge, Button, Input, Modal } from "@/components/ui";
+import { Badge, Button, Input, Modal } from "@/components/ui";
 import toast from "react-hot-toast";
 
 type Message = {
   id: string;
   senderId: string;
   senderName: string;
+  senderAvatar?: string;
   senderRole?: string;
   text: string;
   imageUrl?: string;
-  attachmentType?: "image" | "document" | "location" | "audio";
+  attachmentType?: "image" | "document" | "audio";
   attachmentName?: string;
   attachmentMeta?: string;
   timestamp: string;
@@ -64,13 +55,13 @@ type Message = {
     text: string;
   };
   reactions?: { emoji: string; count: number; userReacted?: boolean }[];
-  isPinned?: boolean;
 };
 
 type Conversation = {
   id: string;
   name: string;
   role: string;
+  avatar?: string;
   initials: string;
   online: boolean;
   lastMessage: string;
@@ -86,23 +77,39 @@ type Conversation = {
 const mockConversations: Conversation[] = [
   {
     id: "c1",
+    name: "Aarav Patel",
+    role: "Resident • Tower A 402",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop",
+    initials: "AP",
+    online: true,
+    lastMessage: "Are you coming to the society meeting?",
+    timestamp: "10:30 AM",
+    unread: 2,
+    category: "neighbors",
+    membersCount: 2,
+    badge: "Tower A",
+    description: "Resident of Flat 402, Tower A. Society cultural committee coordinator.",
+  },
+  {
+    id: "c2",
     name: "🏢 Ajeenkya Residency - Main Lounge",
     role: "Official Society Group",
     initials: "AR",
     online: true,
-    lastMessage: "Aarav: Sunday tree plantation drive starts at 8:30 AM in central lawn!",
+    lastMessage: "Priya: Sunday tree plantation drive starts at 8:30 AM!",
     timestamp: "10:32 AM",
-    unread: 3,
+    unread: 4,
     category: "groups",
     membersCount: 142,
     badge: "Official",
-    description: "General community lounge for all residents of Tower A, B, and C. Share society updates, inquiries, and social news.",
-    pinnedNotice: "📢 Annual General Society Meeting (AGM) scheduled for this Sunday at 10:00 AM in Clubhouse.",
+    description: "General open community lounge for all residents of Tower A, B, and C.",
+    pinnedNotice: "📢 Annual General Meeting (AGM) scheduled for this Sunday at 10:00 AM in the Clubhouse.",
   },
   {
-    id: "c2",
+    id: "c3",
     name: "Urvesh Rane",
     role: "Founder & Lead Developer",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop",
     initials: "UR",
     online: true,
     lastMessage: "The new community update and instant SOS alert system are live!",
@@ -110,13 +117,14 @@ const mockConversations: Conversation[] = [
     unread: 0,
     category: "neighbors",
     membersCount: 2,
-    badge: "Lead",
-    description: "NearNest Creator & Lead Developer • Tower A 401 • Contact: urveshrane3206@gmail.com",
+    badge: "Lead Dev",
+    description: "NearNest Creator • Tower A 401 • Contact: urveshrane3206@gmail.com",
   },
   {
-    id: "c3",
+    id: "c4",
     name: "Sumit Gurjar",
     role: "Co-Founder & Operations",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop",
     initials: "SG",
     online: true,
     lastMessage: "Campus facility guidelines have been shared with the society committee.",
@@ -128,7 +136,7 @@ const mockConversations: Conversation[] = [
     description: "ADYPU Academic Associate & Operations Co-Lead • Contact: sumit.gurjar@adypu.edu.in",
   },
   {
-    id: "c4",
+    id: "c5",
     name: "👮 Society Main Security Desk (Gate 1)",
     role: "24/7 Security Intercom",
     initials: "SD",
@@ -140,63 +148,36 @@ const mockConversations: Conversation[] = [
     membersCount: 6,
     badge: "Security",
     description: "Direct real-time intercom line to Main Gate Security and Society Watch.",
-    pinnedNotice: "🔒 Night visitor registration is strictly mandatory after 10:30 PM.",
+    pinnedNotice: "🔒 Night visitor entry registration is strictly mandatory after 10:30 PM.",
   },
   {
-    id: "c5",
+    id: "c6",
+    name: "🛒 Green Mart Organic Groceries",
+    role: "Local Verified Grocery",
+    avatar: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=200&auto=format&fit=crop",
+    initials: "GM",
+    online: true,
+    lastMessage: "Your order is ready for 15-minute doorstep delivery.",
+    timestamp: "Yesterday",
+    unread: 0,
+    category: "services",
+    membersCount: 2,
+    badge: "Shop",
+    description: "Daily fresh vegetables, organic milk, and farm groceries delivered to your door.",
+  },
+  {
+    id: "c7",
     name: "⚽ Weekend Sports & Badminton Club",
     role: "Resident Sports Group",
     initials: "SC",
     online: true,
-    lastMessage: "Court 2 is reserved today from 6:00 PM to 8:00 PM. Who is in?",
+    lastMessage: "Court 2 is booked today from 6:00 PM to 8:00 PM.",
     timestamp: "Yesterday",
     unread: 0,
     category: "groups",
     membersCount: 38,
     badge: "Sports",
-    description: "Community sports club for evening badminton, cricket tournaments, and clubhouse gym workouts.",
-  },
-  {
-    id: "c6",
-    name: "🛍️ Buy, Sell & Swap Marketplace",
-    role: "Neighborhood Barter",
-    initials: "BS",
-    online: true,
-    lastMessage: "Preeti: Wooden bookshelf in mint condition available for ₹1,200.",
-    timestamp: "Yesterday",
-    unread: 0,
-    category: "groups",
-    membersCount: 89,
-    badge: "Market",
-    description: "Sell, buy, or donate pre-loved furniture, electronics, and books with zero commission.",
-  },
-  {
-    id: "c7",
-    name: "🛒 Green Mart Organic",
-    role: "Local Verified Grocery",
-    initials: "GM",
-    online: true,
-    lastMessage: "Your organic vegetable basket order has been packed for 15-min delivery.",
-    timestamp: "Yesterday",
-    unread: 0,
-    category: "services",
-    membersCount: 2,
-    badge: "Store",
-    description: "Daily fresh vegetables, farm milk, and artisan bakery products delivered directly to your flat.",
-  },
-  {
-    id: "c8",
-    name: "🔧 Rajesh Electrician & Repair",
-    role: "ID Verified Pro",
-    initials: "RE",
-    online: false,
-    lastMessage: "I will visit your flat at 4:30 PM for the MCB wiring inspection.",
-    timestamp: "Oct 24",
-    unread: 0,
-    category: "services",
-    membersCount: 2,
-    badge: "Verified",
-    description: "Licensed society electrician with 8+ years experience in electrical troubleshooting.",
+    description: "Community sports club for evening badminton, cricket, and gym sessions.",
   },
 ];
 
@@ -207,6 +188,29 @@ const initialMessagesRecord: Record<string, Message[]> = {
       senderId: "u_aarav",
       senderName: "Aarav Patel",
       senderRole: "Tower A 402",
+      text: "Hey! Are you coming to the society meeting?",
+      timestamp: "10:30 AM",
+      status: "read",
+      isOutgoing: false,
+      reactions: [{ emoji: "👍", count: 2 }],
+    },
+    {
+      id: "m2",
+      senderId: "me",
+      senderName: "You",
+      senderRole: "Resident",
+      text: "Yes, I'll be there. What's on the agenda?",
+      timestamp: "10:32 AM",
+      status: "read",
+      isOutgoing: true,
+    },
+  ],
+  c2: [
+    {
+      id: "m21",
+      senderId: "u_aarav",
+      senderName: "Aarav Patel",
+      senderRole: "Tower A 402",
       text: "Good morning neighbors! 🌿 Is anyone interested in joining our community plantation drive this Sunday?",
       timestamp: "10:15 AM",
       status: "read",
@@ -214,7 +218,7 @@ const initialMessagesRecord: Record<string, Message[]> = {
       reactions: [{ emoji: "🌱", count: 6, userReacted: true }, { emoji: "👍", count: 4 }],
     },
     {
-      id: "m2",
+      id: "m22",
       senderId: "u_priya",
       senderName: "Priya Sharma",
       senderRole: "Tower B 204",
@@ -225,7 +229,7 @@ const initialMessagesRecord: Record<string, Message[]> = {
       reactions: [{ emoji: "❤️", count: 5 }],
     },
     {
-      id: "m3",
+      id: "m23",
       senderId: "me",
       senderName: "You",
       senderRole: "Resident",
@@ -235,60 +239,15 @@ const initialMessagesRecord: Record<string, Message[]> = {
       isOutgoing: true,
     },
     {
-      id: "m4",
-      senderId: "u_aarav",
-      senderName: "Aarav Patel",
-      senderRole: "Tower A 402",
-      text: "Sunday tree plantation drive starts at 8:30 AM in central lawn! Free refreshments & saplings provided by the society committee.",
+      id: "m24",
+      senderId: "u_priya",
+      senderName: "Priya Sharma",
+      senderRole: "Tower B 204",
+      text: "Sunday tree plantation drive starts at 8:30 AM! Free refreshments provided by the society committee.",
       timestamp: "10:32 AM",
       status: "read",
       isOutgoing: false,
       reactions: [{ emoji: "👏", count: 8 }],
-    },
-  ],
-  c2: [
-    {
-      id: "m21",
-      senderId: "u_urvesh",
-      senderName: "Urvesh Rane",
-      senderRole: "Founder & Lead Developer",
-      text: "Hi! Welcome to NearNest. We just launched the real-time community chat and emergency SOS hub.",
-      timestamp: "10:25 AM",
-      status: "read",
-      isOutgoing: false,
-    },
-    {
-      id: "m22",
-      senderId: "me",
-      senderName: "You",
-      senderRole: "Resident",
-      text: "The interface looks super smooth and fast! Love the community features.",
-      timestamp: "10:27 AM",
-      status: "read",
-      isOutgoing: true,
-    },
-    {
-      id: "m23",
-      senderId: "u_urvesh",
-      senderName: "Urvesh Rane",
-      senderRole: "Founder & Lead Developer",
-      text: "The new community update and instant SOS alert system are live!",
-      timestamp: "10:28 AM",
-      status: "read",
-      isOutgoing: false,
-      reactions: [{ emoji: "🚀", count: 2, userReacted: true }],
-    },
-  ],
-  c3: [
-    {
-      id: "m31",
-      senderId: "u_sumit",
-      senderName: "Sumit Gurjar",
-      senderRole: "Co-Founder & Operations",
-      text: "Hello! Campus facility guidelines have been shared with the society committee.",
-      timestamp: "10:15 AM",
-      status: "read",
-      isOutgoing: false,
     },
   ],
 };
@@ -307,14 +266,14 @@ function playNotificationChime(isOutgoing = true) {
     const now = ctx.currentTime;
 
     if (isOutgoing) {
-      osc.frequency.setValueAtTime(587.33, now); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
-      gain.gain.setValueAtTime(0.12, now);
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+      gain.gain.setValueAtTime(0.1, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
     } else {
-      osc.frequency.setValueAtTime(880, now); // A5
-      osc.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15); // D6
-      gain.gain.setValueAtTime(0.15, now);
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15);
+      gain.gain.setValueAtTime(0.12, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
     }
 
@@ -338,7 +297,7 @@ export default function ChatPage() {
   const [showInfoSidebar, setShowInfoSidebar] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
-  
+
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -359,7 +318,6 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto scroll to bottom
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -368,7 +326,6 @@ export default function ChatPage() {
     scrollToBottom("smooth");
   }, [messages, isTyping]);
 
-  // Handle voice recording timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
@@ -379,7 +336,6 @@ export default function ChatPage() {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // Switch Active Conversation
   const handleSelectConv = (conv: Conversation) => {
     setActiveConv(conv);
     setReplyingTo(null);
@@ -389,7 +345,7 @@ export default function ChatPage() {
         senderId: conv.id,
         senderName: conv.name,
         senderRole: conv.role,
-        text: `Welcome to ${conv.name}! You can now share updates and chat with members.`,
+        text: `Welcome to the chat with ${conv.name}. Say hello to start connecting!`,
         timestamp: "Just now",
         status: "read",
         isOutgoing: false,
@@ -398,7 +354,6 @@ export default function ChatPage() {
     setIsMobileListOpen(false);
   };
 
-  // Filter conversations
   const filteredConversations = conversations.filter((c) => {
     const matchesSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -407,7 +362,6 @@ export default function ChatPage() {
     return matchesSearch && matchesTab;
   });
 
-  // Send message handler
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
 
@@ -434,7 +388,6 @@ export default function ChatPage() {
     setShowEmojiPicker(false);
     playNotificationChime(true);
 
-    // Update message delivery status simulation
     setTimeout(() => {
       setMessages((prev) =>
         prev.map((m) => (m.id === newMessage.id ? { ...m, status: "delivered" } : m))
@@ -448,18 +401,17 @@ export default function ChatPage() {
       setIsTyping(true);
     }, 1000);
 
-    // Dynamic intelligent reply simulation
     setTimeout(() => {
       setIsTyping(false);
-      let replyContent = "Got it! Thanks for reaching out.";
+      let replyText = "Got it! See you soon.";
       if (activeConv.id === "c1") {
-        replyContent = "Great! See you at the central lawn on Sunday morning. 🌱";
+        replyText = "We are discussing the new society solar panels and garden landscaping!";
       } else if (activeConv.id === "c2") {
-        replyContent = "Awesome! We're building new community features every week. Let us know any suggestions! 🚀";
-      } else if (activeConv.id === "c4") {
-        replyContent = "Gate 1 Guard verified and logged the entry pass into the digital society register. ✓";
+        replyText = "Great! See you at the central lawn on Sunday morning at 8:30 AM. 🌱";
+      } else if (activeConv.id === "c3") {
+        replyText = "Awesome! We're building new community features every week. Let us know any suggestions! 🚀";
       } else if (activeConv.id === "c5") {
-        replyContent = "Awesome! Court is booked. Bring your racket and shuttlecock at 6 PM! 🏸";
+        replyText = "Gate 1 Guard verified and logged the entry pass into the digital society register. ✓";
       }
 
       const replyMsg: Message = {
@@ -467,7 +419,7 @@ export default function ChatPage() {
         senderId: activeConv.id,
         senderName: activeConv.name.replace(/^[^\w\s]+/, '').trim(),
         senderRole: activeConv.role,
-        text: replyContent,
+        text: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: "read",
         isOutgoing: false,
@@ -479,7 +431,6 @@ export default function ChatPage() {
     }, 2500);
   };
 
-  // Reactions Handler
   const handleAddReaction = (messageId: string, emoji: string) => {
     setMessages((prev) =>
       prev.map((m) => {
@@ -510,7 +461,6 @@ export default function ChatPage() {
     );
   };
 
-  // File Upload Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -538,7 +488,6 @@ export default function ChatPage() {
     toast.success(`Sent ${file.name}`);
   };
 
-  // Send Voice Note Simulation
   const handleSendVoiceNote = () => {
     setIsRecording(false);
     const duration = recordingSeconds || 3;
@@ -548,7 +497,7 @@ export default function ChatPage() {
       senderId: "me",
       senderName: "You",
       senderRole: "Resident",
-      text: `🎤 Voice message (${duration}s)`,
+      text: `🎤 Voice note (${duration}s)`,
       attachmentType: "audio",
       attachmentMeta: `0:${duration < 10 ? '0' : ''}${duration}`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -561,7 +510,6 @@ export default function ChatPage() {
     toast.success("Voice note sent");
   };
 
-  // Create new group handler
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
@@ -588,7 +536,7 @@ export default function ChatPage() {
         id: `welcome_${newGroup.id}`,
         senderId: "system",
         senderName: "NearNest System",
-        text: `🎉 You created "${newGroupName}". Invite neighbors and start collaborating!`,
+        text: `🎉 You created "${newGroupName}". Invite neighbors to join!`,
         timestamp: "Just now",
         status: "read",
         isOutgoing: false,
@@ -600,10 +548,10 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-8.5rem)] min-h-[540px] flex bg-surface border border-border-hairline rounded-3xl overflow-hidden shadow-card relative">
+    <div className="h-full w-full flex bg-surface border border-border-hairline rounded-3xl overflow-hidden shadow-card relative select-none">
       
       {/* ========================================================================= */}
-      {/* 1. LEFT SIDEBAR: CHANNEL & CONVERSATION DIRECTORY */}
+      {/* 1. LEFT SIDEBAR: CHANNEL & CONVERSATION LIST */}
       {/* ========================================================================= */}
       <div
         className={`${
@@ -611,15 +559,15 @@ export default function ChatPage() {
         } md:flex w-full md:w-80 lg:w-[350px] flex-col bg-surface border-r border-border-hairline shrink-0 z-20`}
       >
         {/* Top Header */}
-        <div className="p-4 border-b border-border-hairline space-y-3">
+        <div className="p-4 border-b border-border-hairline space-y-3 bg-surface">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-2xl bg-brand-500/10 text-brand-600 flex items-center justify-center font-bold">
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-text-primary leading-none">Community Chat</h1>
-                <span className="text-[10px] text-text-tertiary">Real-time Neighborhood Hub</span>
+                <h1 className="text-base font-bold text-text-primary leading-tight">Messages</h1>
+                <span className="text-[10px] text-text-tertiary">NearNest Community Hub</span>
               </div>
             </div>
 
@@ -639,7 +587,7 @@ export default function ChatPage() {
             <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-text-tertiary" />
             <input
               type="text"
-              placeholder="Search conversations, clubs, or flats..."
+              placeholder="Search conversations..."
               className="w-full pl-9 pr-4 py-2 bg-canvas border border-border-hairline rounded-xl text-xs text-text-primary placeholder:text-text-tertiary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -647,14 +595,14 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Category Pills Tabs */}
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border-hairline overflow-x-auto no-scrollbar bg-surface-subtle/30">
+        {/* Category Filter Pills */}
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border-hairline overflow-x-auto no-scrollbar bg-surface-subtle/40">
           {[
             { id: "all", label: "All" },
-            { id: "groups", label: "Groups" },
             { id: "neighbors", label: "Neighbors" },
+            { id: "groups", label: "Groups" },
             { id: "society", label: "Society" },
-            { id: "services", label: "Services" },
+            { id: "services", label: "Businesses" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -671,7 +619,7 @@ export default function ChatPage() {
         </div>
 
         {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-border-hairline/40">
+        <div className="flex-1 overflow-y-auto divide-y divide-border-hairline/40 bg-surface">
           {filteredConversations.length === 0 ? (
             <div className="p-8 text-center text-text-tertiary text-xs">
               No conversations found.
@@ -685,15 +633,23 @@ export default function ChatPage() {
                   onClick={() => handleSelectConv(conv)}
                   className={`flex items-start gap-3 p-3.5 cursor-pointer transition-all ${
                     isSelected
-                      ? "bg-brand-50/70 dark:bg-brand-950/40 border-l-4 border-brand-500"
+                      ? "bg-brand-50/80 dark:bg-brand-950/40 border-l-4 border-brand-500"
                       : "hover:bg-surface-subtle/70"
                   }`}
                 >
-                  {/* Avatar with Status Pulse */}
+                  {/* Avatar */}
                   <div className="relative shrink-0 mt-0.5">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-500/20 to-teal-500/20 border border-brand-500/30 flex items-center justify-center font-bold text-sm text-brand-700 dark:text-brand-300 shadow-sm">
-                      {conv.initials}
-                    </div>
+                    {conv.avatar ? (
+                      <img
+                        src={conv.avatar}
+                        alt={conv.name}
+                        className="w-11 h-11 rounded-2xl object-cover border border-border-hairline shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-500/20 to-teal-500/20 border border-brand-500/30 flex items-center justify-center font-bold text-sm text-brand-700 dark:text-brand-300 shadow-sm">
+                        {conv.initials}
+                      </div>
+                    )}
                     {conv.online && (
                       <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-surface rounded-full shadow-sm" />
                     )}
@@ -729,14 +685,14 @@ export default function ChatPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. MAIN ACTIVE CHAT WINDOW */}
+      {/* 2. MAIN CHAT AREA */}
       {/* ========================================================================= */}
       <div className={`flex-1 flex flex-col bg-canvas overflow-hidden ${!isMobileListOpen ? "flex" : "hidden md:flex"}`}>
         
         {/* Top Chat Bar */}
         <div className="px-4 sm:px-6 py-3 bg-surface border-b border-border-hairline flex items-center justify-between z-10 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Mobile Back to List */}
+            {/* Mobile Back Button */}
             <button
               onClick={() => setIsMobileListOpen(true)}
               className="p-1.5 -ml-1 text-text-secondary hover:text-text-primary md:hidden rounded-lg hover:bg-surface-subtle"
@@ -745,9 +701,17 @@ export default function ChatPage() {
             </button>
 
             <div className="relative shrink-0">
-              <div className="w-10 h-10 rounded-2xl bg-brand-500/15 text-brand-600 font-bold text-sm flex items-center justify-center border border-brand-500/20 shadow-sm">
-                {activeConv.initials}
-              </div>
+              {activeConv.avatar ? (
+                <img
+                  src={activeConv.avatar}
+                  alt={activeConv.name}
+                  className="w-10 h-10 rounded-2xl object-cover border border-border-hairline shadow-sm"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-2xl bg-brand-500/15 text-brand-600 font-bold text-sm flex items-center justify-center border border-brand-500/20 shadow-sm">
+                  {activeConv.initials}
+                </div>
+              )}
               {activeConv.online && (
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-surface rounded-full animate-pulse" />
               )}
@@ -763,13 +727,13 @@ export default function ChatPage() {
                 )}
               </h2>
               <p className="text-[11px] text-text-secondary truncate flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>{activeConv.online ? "Online" : "Offline"} • {activeConv.role}</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${activeConv.online ? "bg-emerald-500" : "bg-neutral-400"}`} />
+                <span>{activeConv.online ? "Active now" : "Offline"} • {activeConv.role}</span>
               </p>
             </div>
           </div>
 
-          {/* Quick Chat Actions */}
+          {/* Quick Header Actions */}
           <div className="flex items-center gap-1 sm:gap-2 text-text-secondary">
             <button
               onClick={() => setActiveCall("audio")}
@@ -797,7 +761,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Pinned Notice Header (if present) */}
+        {/* Pinned Notice Header */}
         {activeConv.pinnedNotice && (
           <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
             <div className="flex items-center gap-2 min-w-0">
@@ -805,19 +769,19 @@ export default function ChatPage() {
               <span className="font-medium truncate">{activeConv.pinnedNotice}</span>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 px-2 py-0.5 rounded ml-2 shrink-0">
-              Pinned Notice
+              Pinned
             </span>
           </div>
         )}
 
-        {/* Message Stream Scroll Area */}
+        {/* Message Stream */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           
           {/* Security Banner */}
           <div className="flex justify-center my-1">
             <div className="bg-surface border border-border-hairline text-text-tertiary text-[11px] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
               <Shield className="w-3.5 h-3.5 text-emerald-500" />
-              <span>NearNest End-to-End Encrypted Society Channel</span>
+              <span>NearNest End-to-End Encrypted Message</span>
             </div>
           </div>
 
@@ -829,7 +793,7 @@ export default function ChatPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex flex-col ${msg.isOutgoing ? "items-end" : "items-start"} group/msg`}
               >
-                {/* Sender Name for incoming group messages */}
+                {/* Sender Name for incoming messages */}
                 {!msg.isOutgoing && (
                   <div className="flex items-center gap-1.5 mb-1 px-1">
                     <span className="text-[11px] font-bold text-text-primary">{msg.senderName}</span>
@@ -839,11 +803,11 @@ export default function ChatPage() {
                   </div>
                 )}
 
-                <div className="relative max-w-[85%] sm:max-w-[72%]">
+                <div className="relative max-w-[85%] sm:max-w-[70%]">
                   
                   {/* Quoted Message (if replying) */}
                   {msg.replyTo && (
-                    <div className="mb-1 p-2 rounded-xl bg-surface-subtle/80 border-l-4 border-brand-500 text-[11px] text-text-secondary truncate">
+                    <div className="mb-1 p-2 rounded-xl bg-surface-subtle/90 border-l-4 border-brand-500 text-[11px] text-text-secondary truncate">
                       <span className="font-bold text-brand-600 block">{msg.replyTo.senderName}</span>
                       <span className="truncate">{msg.replyTo.text}</span>
                     </div>
@@ -864,7 +828,7 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* Attached Document / File */}
+                    {/* Attached Document */}
                     {msg.attachmentType === "document" && (
                       <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/10 dark:bg-white/10 mb-1.5">
                         <FileText className="w-5 h-5" />
@@ -926,7 +890,7 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* Hover Quick Actions Bar */}
+                  {/* Hover Quick Actions */}
                   <div
                     className={`absolute -top-3.5 ${
                       msg.isOutgoing ? "right-2" : "left-2"
@@ -965,7 +929,7 @@ export default function ChatPage() {
             ))}
           </AnimatePresence>
 
-          {/* Typing Indicator */}
+          {/* Typing Animation */}
           {isTyping && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
@@ -985,7 +949,7 @@ export default function ChatPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 3. BOTTOM MESSAGE COMPOSER & ACTIONS */}
+        {/* 3. BOTTOM MESSAGE COMPOSER */}
         {/* ========================================================================= */}
         <div className="p-3 sm:p-4 bg-surface border-t border-border-hairline relative">
           
@@ -1006,7 +970,7 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Emoji Palette Popover */}
+          {/* Emoji Popover */}
           {showEmojiPicker && (
             <div className="absolute bottom-full left-4 mb-2 p-2.5 bg-surface border border-border-hairline rounded-2xl shadow-2xl flex items-center gap-2 z-30 animate-fade-in">
               {EMOJIS.map((emoji) => (
@@ -1024,7 +988,7 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Composer Input Bar */}
+          {/* Composer Box */}
           {isRecording ? (
             <div className="flex items-center justify-between bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-900 rounded-2xl p-2 px-4 animate-pulse">
               <div className="flex items-center gap-2 text-red-600 text-xs font-bold">
@@ -1078,7 +1042,7 @@ export default function ChatPage() {
 
               <input
                 type="text"
-                placeholder={`Message ${activeConv.name}... (Press Enter to send)`}
+                placeholder={`Type a message to ${activeConv.name}...`}
                 className="flex-1 bg-transparent border-none outline-none text-xs text-text-primary placeholder:text-text-tertiary px-2"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -1109,13 +1073,13 @@ export default function ChatPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. RIGHT SIDEBAR: CHANNEL & COMMUNITY INFO */}
+      {/* 4. RIGHT SIDEBAR: CHANNEL INFO */}
       {/* ========================================================================= */}
       {showInfoSidebar && (
         <div className="w-80 border-l border-border-hairline bg-surface p-5 flex flex-col justify-between overflow-y-auto z-20">
           <div className="space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-border-hairline">
-              <h3 className="text-sm font-bold text-text-primary">Channel Info</h3>
+              <h3 className="text-sm font-bold text-text-primary">Conversation Info</h3>
               <button
                 onClick={() => setShowInfoSidebar(false)}
                 className="p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-subtle"
@@ -1125,21 +1089,29 @@ export default function ChatPage() {
             </div>
 
             <div className="flex flex-col items-center text-center space-y-2">
-              <div className="w-16 h-16 rounded-3xl bg-brand-500/15 text-brand-600 font-bold text-xl flex items-center justify-center border border-brand-500/20 shadow-sm">
-                {activeConv.initials}
-              </div>
+              {activeConv.avatar ? (
+                <img
+                  src={activeConv.avatar}
+                  alt={activeConv.name}
+                  className="w-16 h-16 rounded-3xl object-cover border border-border-hairline shadow-md"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-3xl bg-brand-500/15 text-brand-600 font-bold text-xl flex items-center justify-center border border-brand-500/20 shadow-sm">
+                  {activeConv.initials}
+                </div>
+              )}
               <h4 className="text-sm font-bold text-text-primary">{activeConv.name}</h4>
               <p className="text-xs text-text-secondary">{activeConv.role}</p>
             </div>
 
             <div className="bg-canvas p-3.5 rounded-2xl border border-border-hairline space-y-1">
-              <span className="text-[10px] font-bold uppercase text-text-tertiary tracking-wider">About Channel</span>
+              <span className="text-[10px] font-bold uppercase text-text-tertiary tracking-wider">About</span>
               <p className="text-xs text-text-secondary leading-relaxed">{activeConv.description}</p>
             </div>
 
-            {/* Community Controls */}
+            {/* Actions */}
             <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase text-text-tertiary tracking-wider">Controls & Tools</span>
+              <span className="text-[10px] font-bold uppercase text-text-tertiary tracking-wider">Quick Controls</span>
               <div className="space-y-1.5 text-xs">
                 <button
                   onClick={() => toast.success("Notifications muted for 8 hours")}
@@ -1167,13 +1139,13 @@ export default function ChatPage() {
           </div>
 
           <div className="pt-4 border-t border-border-hairline text-center text-[11px] text-text-tertiary">
-            NearNest Verified Channel • 2026
+            NearNest Verified Connection • 2026
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* 5. HD VOICE / VIDEO CALL MODAL SIMULATION */}
+      {/* 5. CALL SIMULATION MODAL */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {activeCall && (
