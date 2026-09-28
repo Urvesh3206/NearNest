@@ -180,21 +180,16 @@ export function Contact() {
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 shadow-sm">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-text-primary mb-1">Message Sent!</h3>
-                <p className="text-sm text-text-secondary max-w-sm mx-auto">
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-text-primary">Message Sent!</h3>
+                <p className="text-sm text-text-secondary max-w-sm mx-auto leading-relaxed">
                   Thank you, <span className="font-semibold text-text-primary">{submittedName}</span>! Your message has been sent successfully. We will get back to you shortly.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-secondary max-w-sm text-center space-y-1">
-                <p className="font-semibold text-text-primary">Inquiry Status</p>
-                <p className="text-emerald-600 font-medium">✓ Received and forwarded to our team</p>
-              </div>
-
               <Button
                 onClick={resetForm}
-                className="mt-4 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold"
+                className="mt-4 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold shadow-sm"
               >
                 Send Another Message
               </Button>
