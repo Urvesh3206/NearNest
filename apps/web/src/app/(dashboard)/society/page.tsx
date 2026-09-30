@@ -14,10 +14,12 @@ import {
   CheckCircle,
   Plus,
   Copy,
-  Check
+  Check,
+  ShieldCheck
 } from "lucide-react";
+import GateScanner, { loadStoredPasses, saveStoredPasses, GatePassRecord } from "@/components/society/GateScanner";
 
-type Tab = "Notice Board" | "Maintenance" | "Gate Pass" | "Complaints" | "Amenities";
+type Tab = "Notice Board" | "Maintenance" | "Gate Pass" | "Gate Scanner" | "Complaints" | "Amenities";
 
 export default function SocietyPage() {
   const [activeTab, setActiveTab] = useState<Tab>("Notice Board");
@@ -42,17 +44,22 @@ export default function SocietyPage() {
 
       {/* Tabs */}
       <div className="flex overflow-x-auto space-x-2 border-b border-gray-200 dark:border-slate-700 hide-scrollbar pb-2">
-        {(["Notice Board", "Maintenance", "Gate Pass", "Complaints", "Amenities"] as Tab[]).map((tab) => (
+        {(["Notice Board", "Maintenance", "Gate Pass", "Gate Scanner", "Complaints", "Amenities"] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+            className={`px-4 py-2 font-medium rounded-t-lg transition-colors whitespace-nowrap flex items-center ${
               activeTab === tab
                 ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-400"
                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             {tab}
+            {tab === "Gate Scanner" && (
+              <span className="ml-2 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                Guard
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -71,7 +78,12 @@ export default function SocietyPage() {
             {activeTab === "Maintenance" && (
               <Maintenance onClickPay={() => setShowBillModal(true)} />
             )}
-            {activeTab === "Gate Pass" && <GatePass />}
+            {activeTab === "Gate Pass" && (
+              <GatePass onSwitchToScanner={(passId) => setActiveTab("Gate Scanner")} />
+            )}
+            {activeTab === "Gate Scanner" && (
+              <GateScanner onSwitchToCreate={() => setActiveTab("Gate Pass")} />
+            )}
             {activeTab === "Complaints" && <Complaints />}
             {activeTab === "Amenities" && <Amenities />}
           </motion.div>
@@ -196,7 +208,7 @@ function Maintenance({ onClickPay }: { onClickPay: () => void }) {
   );
 }
 
-function GatePass() {
+function GatePass({ onSwitchToScanner }: { onSwitchToScanner?: (passId: string) => void }) {
   const [visitorName, setVisitorName] = useState("");
   const [phone, setPhone] = useState("");
   const [purpose, setPurpose] = useState("Delivery");
@@ -229,6 +241,20 @@ function GatePass() {
       date,
       time: currentTime
     });
+
+    // Save into shared passes storage so Gate Scanner can verify it immediately
+    const newRecord: GatePassRecord = {
+      id: passId,
+      visitorName: visitorName.trim(),
+      phone: phone.trim() || "+91 98765 43210",
+      purpose,
+      date,
+      hostName: "Resident (You)",
+      flatNumber: "Tower A - Flat 402",
+      status: "approved",
+    };
+    const existing = loadStoredPasses();
+    saveStoredPasses([newRecord, ...existing.filter((p) => p.id !== passId)]);
   };
 
   const handleShare = () => {
@@ -379,6 +405,17 @@ function GatePass() {
               Verified
             </button>
           </div>
+
+          {onSwitchToScanner && (
+            <button
+              type="button"
+              onClick={() => onSwitchToScanner(passData.id)}
+              className="w-full mt-2 py-2.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold flex items-center justify-center transition-colors shadow-xs"
+            >
+              <ShieldCheck className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+              Test this in Security Gate Scanner →
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-8 bg-gray-50/70 dark:bg-slate-800/40">
