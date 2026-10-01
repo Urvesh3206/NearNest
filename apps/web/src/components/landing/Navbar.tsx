@@ -9,6 +9,8 @@ import { ThemeToggle } from '@/components/ui';
 import { APP_CONFIG } from '@/config/app';
 import { cn } from '@/lib/utils';
 
+import { useAuth } from '@/providers/AuthProvider';
+
 const navLinks = [
   { name: 'Features', href: '#features' },
   { name: 'Businesses', href: '#businesses' },
@@ -19,6 +21,7 @@ const navLinks = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,16 +65,35 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
-          <Link href="/login">
-            <Button variant="ghost" className="text-text-secondary hover:text-text-primary">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/signup">
-            <Button className="bg-brand-500 hover:bg-brand-600 text-white rounded-full px-6">
-              Get Started
-            </Button>
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <Link href="/feed">
+                <Button className="bg-brand-500 hover:bg-brand-600 text-white rounded-full px-5 text-xs">
+                  Go to Feed
+                </Button>
+              </Link>
+              <Button 
+                onClick={logout} 
+                variant="ghost" 
+                className="text-coral-600 dark:text-coral-400 hover:bg-coral-50 dark:hover:bg-coral-950/30 text-xs px-3 rounded-full font-semibold"
+              >
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" className="text-text-secondary hover:text-text-primary">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="bg-brand-500 hover:bg-brand-600 text-white rounded-full px-6">
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Toggle */}

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
   Store, 
@@ -231,13 +232,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Notification Center */}
             <NotificationDropdown />
 
-            <Link href="/profile" className="flex items-center gap-2">
-              <Avatar 
-                src={user?.photoURL || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop"} 
-                name={user?.name || "User"} 
-                className="h-8 w-8 rounded-xl border-2 border-brand-500/30 cursor-pointer hover:border-brand-500 transition-colors" 
-              />
-            </Link>
+            {/* User Account & Profile Dropdown */}
+            <UserMenuDropdown />
           </div>
         </header>
 
@@ -270,3 +266,109 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
+
+function UserMenuDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  if (!user) {
+    return (
+      <Link href="/login" className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-sm transition-all">
+        Sign In
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 p-0.5 rounded-xl hover:ring-2 hover:ring-brand-500/30 transition-all focus:outline-none"
+        title="User Account & Logout Menu"
+      >
+        <Avatar 
+          src={user.photoURL || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop"} 
+          name={user.name || "User"} 
+          className="h-8 w-8 rounded-xl border-2 border-brand-500/30 cursor-pointer hover:border-brand-500 transition-colors" 
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 mt-2 w-64 bg-surface border border-border-hairline rounded-2xl shadow-float p-2 z-50 backdrop-blur-xl"
+          >
+            {/* User Info Header */}
+            <div className="p-3 border-b border-border-hairline/60">
+              <p className="text-xs font-bold text-text-primary truncate">{user.name}</p>
+              <p className="text-[11px] text-text-tertiary truncate">{user.email}</p>
+              <div className="mt-2">
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  user.role === 'ADMIN'
+                    ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300'
+                    : user.role === 'BUSINESS'
+                    ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
+                    : user.role === 'SERVICE_PROVIDER'
+                    ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+                    : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                }`}>
+                  {user.role === 'ADMIN' ? '👑 Master Admin' : user.role === 'BUSINESS' ? '🏪 Business' : user.role === 'SERVICE_PROVIDER' ? '🔧 Service Pro' : '🏡 Resident'}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div className="py-1">
+              <Link 
+                href="/profile" 
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-xl transition-colors font-medium"
+              >
+                <Avatar src={user.photoURL} name={user.name} className="w-4 h-4" />
+                <span>My Profile</span>
+              </Link>
+              <Link 
+                href="/settings" 
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-xl transition-colors font-medium"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Account Settings</span>
+              </Link>
+            </div>
+
+            {/* Logout Action Button */}
+            <div className="pt-1 border-t border-border-hairline/60">
+              <button 
+                onClick={() => {
+                  setIsOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-coral-600 dark:text-coral-400 hover:bg-coral-50 dark:hover:bg-coral-950/30 rounded-xl transition-colors text-left font-bold"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out / Log Out</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+

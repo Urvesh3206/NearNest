@@ -114,12 +114,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Initialize from localStorage
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('nearnest_profile');
-      if (stored) {
-        setUser(JSON.parse(stored));
+      const isLoggedOut = localStorage.getItem('nearnest_logged_out') === 'true';
+      if (isLoggedOut) {
+        setUser(null);
       } else {
-        localStorage.setItem('nearnest_profile', JSON.stringify(DEMO_PROFILES.ADMIN));
-        setUser(DEMO_PROFILES.ADMIN);
+        const stored = localStorage.getItem('nearnest_profile');
+        if (stored) {
+          setUser(JSON.parse(stored));
+        } else {
+          // Default first-time experience as ADMIN
+          localStorage.setItem('nearnest_profile', JSON.stringify(DEMO_PROFILES.ADMIN));
+          setUser(DEMO_PROFILES.ADMIN);
+        }
       }
     } catch (e) {
       console.warn("localStorage profile parse error:", e);
@@ -148,6 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       role: finalRole,
     };
 
+    localStorage.removeItem('nearnest_logged_out');
     setUser(newUser);
     localStorage.setItem('nearnest_profile', JSON.stringify(newUser));
     toast.success(`Logged in as ${finalRole}: ${cleanName}`);
@@ -160,6 +167,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const switchRole = (newRole: UserRole) => {
     const profile = DEMO_PROFILES[newRole];
     if (profile) {
+      localStorage.removeItem('nearnest_logged_out');
       setUser(profile);
       localStorage.setItem('nearnest_profile', JSON.stringify(profile));
       toast.success(`Active Persona switched to: ${newRole} (${profile.name})`, {
@@ -174,6 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         ...(prev || DEMO_PROFILES.ADMIN),
         ...updatedData,
       };
+      localStorage.removeItem('nearnest_logged_out');
       localStorage.setItem('nearnest_profile', JSON.stringify(updated));
       return updated;
     });
@@ -181,10 +190,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
-    // Revert to Resident baseline upon logout
-    setUser(DEMO_PROFILES.RESIDENT);
-    localStorage.setItem('nearnest_profile', JSON.stringify(DEMO_PROFILES.RESIDENT));
-    toast.success('Signed out. Switched to guest resident mode.');
+    // Clear user session completely
+    setUser(null);
+    localStorage.removeItem('nearnest_profile');
+    localStorage.setItem('nearnest_logged_out', 'true');
+    toast.success('You have been logged out successfully.');
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   };
 
   const role = user?.role || 'RESIDENT';
