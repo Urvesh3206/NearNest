@@ -1,10 +1,12 @@
+export type UserRole = 'ADMIN' | 'RESIDENT' | 'BUSINESS' | 'SERVICE_PROVIDER';
+
 export interface AuthUser {
   uid: string;
   email: string;
   name: string;
   photoURL?: string;
   coverURL?: string;
-  role: 'RESIDENT' | 'BUSINESS' | 'SERVICE_PROVIDER' | 'ADMIN';
+  role: UserRole;
   phone?: string;
   bio?: string;
   society?: string;
@@ -16,13 +18,18 @@ export interface AuthUser {
   emergencyPhone?: string;
   interests?: string[];
   joinedDate?: string;
+  businessName?: string;
+  businessCategory?: string;
+  serviceCategory?: string;
+  hourlyRate?: string;
 }
-
 
 export interface NavItem {
   label: string;
   href: string;
   icon?: string;
+  allowedRoles?: UserRole[];
+  badge?: string;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -36,6 +43,7 @@ export interface FeedPost {
   authorId: string;
   authorName: string;
   authorPhoto?: string;
+  authorRole?: UserRole;
   likesCount: number;
   commentsCount: number;
   createdAt: string;

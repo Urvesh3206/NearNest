@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Users, Activity, AlertTriangle, ShieldCheck, DollarSign, Send, FileText, CheckCircle, XCircle, Search, Download } from 'lucide-react';
 import { Card, Button, Badge, Input, Select, Textarea, Tabs } from '@/components/ui';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('verifications');
@@ -15,9 +16,13 @@ export default function AdminDashboardPage() {
     { label: 'Maintenance Collected', value: '₹4,85,000', subtext: '96% of total', icon: DollarSign, color: 'text-brand-500', bg: 'bg-brand-50 dark:bg-brand-900/20' },
   ];
 
-
   return (
-    <div className="space-y-6">
+    <RoleGuard
+      allowedRoles={['ADMIN']}
+      fallbackTitle="Admin Access Clearance Required"
+      fallbackMessage="The Society Admin Panel manages financial dues, verification requests, and civic broadcasts. This module is restricted to Platform & Society Administrators."
+    >
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Society Admin Panel</h1>
@@ -222,5 +227,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </div>
+    </RoleGuard>
   );
 }
