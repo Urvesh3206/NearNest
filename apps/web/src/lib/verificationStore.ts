@@ -111,13 +111,99 @@ const STORAGE_KEY = 'nearnest_verifications_db';
 export function getLocalVerifications(): VerificationRequest[] {
   if (typeof window === 'undefined') return INITIAL_VERIFICATIONS;
   try {
+    let list: VerificationRequest[] = [];
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_VERIFICATIONS));
-      return INITIAL_VERIFICATIONS;
+      list = [...INITIAL_VERIFICATIONS];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    } else {
+      const parsed = JSON.parse(raw);
+      list = Array.isArray(parsed) && parsed.length > 0 ? parsed : [...INITIAL_VERIFICATIONS];
     }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_VERIFICATIONS;
+
+    // Synchronize custom services submitted via /services (key: nearnest_custom_services)
+    try {
+      const customSrvRaw = localStorage.getItem('nearnest_custom_services');
+      if (customSrvRaw) {
+        const customSrvs = JSON.parse(customSrvRaw);
+        if (Array.isArray(customSrvs)) {
+          for (const srv of customSrvs) {
+            const existingIdx = list.findIndex(r => r.id === srv.id || r.name.toLowerCase() === srv.name?.toLowerCase());
+            if (existingIdx === -1) {
+              list.unshift({
+                id: srv.id || `srv_${Date.now()}`,
+                name: srv.name,
+                category: srv.category || 'Specialist Service',
+                type: 'service',
+                requestType: 'service',
+                title: srv.name,
+                subtitle: `${srv.category || 'Service'} • ${srv.rate || '₹350/hr'} • ${srv.location || 'Greenfield Park'}`,
+                phone: srv.phone || '+91 98765 43210',
+                email: srv.email || 'provider@gmail.com',
+                address: srv.location || 'Society Vicinity',
+                location: srv.location || 'Society Vicinity',
+                rate: srv.rate || '₹350/hr',
+                hourlyRate: srv.rate || '₹350/hr',
+                experience: srv.experience || '3 years',
+                status: srv.status || 'PENDING',
+                verified: Boolean(srv.verified),
+                avatar: srv.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srv.name)}`,
+                submittedBy: srv.submittedBy || `${srv.name} (Service Form Registration)`,
+                createdAt: srv.createdAt || new Date().toISOString(),
+              });
+            } else {
+              // If list is PENDING but custom service has been updated, sync it
+              if (list[existingIdx].status === 'PENDING' && srv.status && srv.status !== 'PENDING') {
+                list[existingIdx].status = srv.status;
+                list[existingIdx].verified = srv.status === 'APPROVED';
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error syncing nearnest_custom_services into verifications:', e);
+    }
+
+    // Synchronize from nearnest_services_registry (key: nearnest_services_registry)
+    try {
+      const regRaw = localStorage.getItem('nearnest_services_registry');
+      if (regRaw) {
+        const regList = JSON.parse(regRaw);
+        if (Array.isArray(regList)) {
+          for (const srv of regList) {
+            const existingIdx = list.findIndex(r => r.id === srv.id || r.name.toLowerCase() === srv.name?.toLowerCase());
+            if (existingIdx === -1) {
+              list.unshift({
+                id: srv.id || `srv_${Date.now()}`,
+                name: srv.name,
+                category: srv.category || 'Specialist Service',
+                type: 'service',
+                requestType: 'service',
+                title: srv.name,
+                subtitle: `${srv.category || 'Service'} • ${srv.hourlyRate || srv.rate || '₹350/hr'} • ${srv.location || 'Greenfield Park'}`,
+                phone: srv.phone || '+91 98765 43210',
+                email: srv.email || 'provider@gmail.com',
+                address: srv.location || 'Society Vicinity',
+                location: srv.location || 'Society Vicinity',
+                rate: srv.hourlyRate || srv.rate || '₹350/hr',
+                hourlyRate: srv.hourlyRate || srv.rate || '₹350/hr',
+                experience: srv.experience || '3 years',
+                status: srv.status || 'PENDING',
+                verified: Boolean(srv.verified),
+                avatar: srv.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srv.name)}`,
+                submittedBy: srv.submittedBy || `${srv.name} (Service Pro Portal)`,
+                createdAt: srv.createdAt || new Date().toISOString(),
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error syncing nearnest_services_registry into verifications:', e);
+    }
+
+    return list;
   } catch {
     return INITIAL_VERIFICATIONS;
   }
@@ -150,15 +236,57 @@ export function addPendingVerification(req: Partial<VerificationRequest>): Verif
     rate: req.rate || req.hourlyRate || '₹300/hr',
     hourlyRate: req.hourlyRate || req.rate || '₹300/hr',
     experience: req.experience || '3 years',
-    status: 'PENDING',
-    verified: false,
+    status: req.status || 'PENDING',
+    verified: req.status === 'APPROVED' ? true : false,
     avatar: req.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(req.name || 'New')}`,
     submittedBy: req.submittedBy || 'Friend / Resident',
     createdAt: new Date().toISOString(),
   };
 
-  const updated = [newReq, ...current];
+  // Ensure not duplicated
+  const filtered = current.filter(r => r.id !== newReq.id && r.name.toLowerCase() !== newReq.name.toLowerCase());
+  const updated = [newReq, ...filtered];
   saveLocalVerifications(updated);
+
+  // Also push to nearnest_services_registry
+  if (typeof window !== 'undefined') {
+    try {
+      const regRaw = localStorage.getItem('nearnest_services_registry');
+      let regList = regRaw ? JSON.parse(regRaw) : [];
+      if (!Array.isArray(regList)) regList = [];
+      const existsInReg = regList.some((p: any) => p.id === newReq.id || p.name.toLowerCase() === newReq.name.toLowerCase());
+      if (!existsInReg) {
+        regList.unshift({
+          id: newReq.id,
+          name: newReq.name,
+          category: newReq.category,
+          hourlyRate: newReq.rate,
+          rate: newReq.rate,
+          location: newReq.location,
+          pincode: '411047',
+          lat: 18.606,
+          lng: 73.875,
+          distance: '0.2 km',
+          distanceKm: 0.2,
+          verified: newReq.verified,
+          rating: 5.0,
+          reviews: 0,
+          experience: newReq.experience,
+          availableToday: true,
+          avatar: newReq.avatar,
+          phone: newReq.phone,
+          email: newReq.email,
+          status: newReq.status,
+          submittedBy: newReq.submittedBy,
+          createdAt: newReq.createdAt,
+        });
+        localStorage.setItem('nearnest_services_registry', JSON.stringify(regList));
+      }
+    } catch (e) {
+      console.warn('Sync error in addPendingVerification to services_registry:', e);
+    }
+  }
+
   return newReq;
 }
 
@@ -167,7 +295,7 @@ export function updateVerificationStatus(id: string, action: 'APPROVE' | 'REJECT
   let found = false;
 
   const modified = current.map((item) => {
-    if (item.id === id) {
+    if (item.id === id || item.name.toLowerCase() === id.toLowerCase()) {
       found = true;
       const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
       return {
@@ -182,5 +310,54 @@ export function updateVerificationStatus(id: string, action: 'APPROVE' | 'REJECT
   if (found) {
     saveLocalVerifications(modified);
   }
+
+  // Also sync the approval status directly into nearnest_custom_services so /services updates!
+  if (typeof window !== 'undefined') {
+    try {
+      const customSrvRaw = localStorage.getItem('nearnest_custom_services');
+      if (customSrvRaw) {
+        const customSrvs = JSON.parse(customSrvRaw);
+        if (Array.isArray(customSrvs)) {
+          const updatedCustom = customSrvs.map((s: any) => {
+            if (s.id === id || s.name.toLowerCase() === id.toLowerCase()) {
+              return {
+                ...s,
+                status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+                verified: action === 'APPROVE',
+              };
+            }
+            return s;
+          });
+          localStorage.setItem('nearnest_custom_services', JSON.stringify(updatedCustom));
+        }
+      }
+    } catch (e) {
+      console.warn('Sync error in custom services:', e);
+    }
+
+    // Also sync into nearnest_services_registry
+    try {
+      const regRaw = localStorage.getItem('nearnest_services_registry');
+      if (regRaw) {
+        const regList = JSON.parse(regRaw);
+        if (Array.isArray(regList)) {
+          const updatedReg = regList.map((p: any) => {
+            if (p.id === id || p.name.toLowerCase() === id.toLowerCase()) {
+              return {
+                ...p,
+                status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+                verified: action === 'APPROVE',
+              };
+            }
+            return p;
+          });
+          localStorage.setItem('nearnest_services_registry', JSON.stringify(updatedReg));
+        }
+      }
+    } catch (e) {
+      console.warn('Sync error in services registry:', e);
+    }
+  }
+
   return found;
 }

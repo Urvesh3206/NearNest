@@ -39,12 +39,25 @@ export default function AdminDashboardPage() {
   const fetchRequests = async () => {
     setLoadingRequests(true);
     try {
+      const localList = getLocalVerifications();
       const res = await fetch('/api/admin/verifications');
       if (res.ok) {
         const data = await res.json();
-        if (data.success && Array.isArray(data.requests) && data.requests.length > 0) {
-          setRequests(data.requests);
-          if (data.counts) setCounts(data.counts);
+        if (data.success && Array.isArray(data.requests)) {
+          const merged = [...data.requests];
+          for (const localItem of localList) {
+            const exists = merged.some(m => m.id === localItem.id || m.name?.toLowerCase() === localItem.name?.toLowerCase());
+            if (!exists) {
+              merged.unshift(localItem);
+            }
+          }
+          setRequests(merged);
+          setCounts({
+            total: merged.length,
+            pending: merged.filter((r) => r.status === 'PENDING').length,
+            approved: merged.filter((r) => r.status === 'APPROVED').length,
+            rejected: merged.filter((r) => r.status === 'REJECTED').length,
+          });
           return;
         }
       }

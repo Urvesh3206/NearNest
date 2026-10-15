@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
 import { useAuth } from "@/providers/AuthProvider";
+import { addPendingVerification, getLocalVerifications } from "@/lib/verificationStore";
 import toast from "react-hot-toast";
 
 const CATEGORIES = ["All", "Electrician", "Plumber", "Maid", "Cook", "Tutor", "AC Repair", "Carpenter", "Painter", "Yoga Trainer", "Babysitter", "RO Repair", "Driver", "Mechanic"];
@@ -222,9 +223,29 @@ function ServicesContent() {
       }
       try {
         const stored = localStorage.getItem('nearnest_custom_services');
-        if (stored) {
-          setCustomServices(JSON.parse(stored));
+        let list = stored ? JSON.parse(stored) : [];
+        if (!Array.isArray(list)) list = [];
+
+        // Synchronize with admin verification store decisions (Approve / Reject)
+        const verifs = getLocalVerifications();
+        let changed = false;
+        list = list.map((srv: any) => {
+          const match = verifs.find((v) => v.id === srv.id || v.name?.toLowerCase() === srv.name?.toLowerCase());
+          if (match && match.status && match.status !== srv.status) {
+            changed = true;
+            return {
+              ...srv,
+              status: match.status,
+              verified: match.status === 'APPROVED',
+            };
+          }
+          return srv;
+        });
+
+        if (changed) {
+          localStorage.setItem('nearnest_custom_services', JSON.stringify(list));
         }
+        setCustomServices(list);
       } catch (e) {}
     }
     loadServices();
@@ -263,6 +284,23 @@ function ServicesContent() {
         const updated = [result.service, ...customServices.filter(s => s.id !== result.service.id)];
         setCustomServices(updated);
         localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
+
+        // Always register in verificationStore so it appears in Admin verification requests
+        addPendingVerification({
+          id: result.service.id,
+          name: result.service.name,
+          category: result.service.category,
+          location: result.service.location,
+          rate: result.service.rate,
+          hourlyRate: result.service.rate,
+          experience: result.service.experience,
+          phone: result.service.phone,
+          email: result.service.email,
+          status: (result.service.status || (isAdmin ? 'APPROVED' : 'PENDING')) as 'APPROVED' | 'PENDING',
+          avatar: result.service.avatar,
+          submittedBy: payload.submittedBy,
+        });
+
         if (result.service.status === 'APPROVED') {
           toast.success(`Service Provider "${result.service.name}" verified & published live! 🎉`);
         } else {
@@ -283,7 +321,7 @@ function ServicesContent() {
         location: srvNeighborhood,
         distance: "0.2 km",
         verified: isPlatformAdmin,
-        status: isPlatformAdmin ? 'APPROVED' : 'PENDING',
+        status: (isPlatformAdmin ? 'APPROVED' : 'PENDING') as 'APPROVED' | 'PENDING',
         rating: 5.0,
         reviews: 0,
         rate: srvRate,
@@ -299,6 +337,23 @@ function ServicesContent() {
       const updated = [fallbackSrv, ...customServices];
       setCustomServices(updated);
       localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
+
+      // Synchronize into verificationStore for the Admin panel!
+      addPendingVerification({
+        id: fallbackSrv.id,
+        name: fallbackSrv.name,
+        category: fallbackSrv.category,
+        location: fallbackSrv.location,
+        rate: fallbackSrv.rate,
+        hourlyRate: fallbackSrv.rate,
+        experience: fallbackSrv.experience,
+        phone: fallbackSrv.phone,
+        email: fallbackSrv.email,
+        status: fallbackSrv.status,
+        avatar: fallbackSrv.avatar,
+        submittedBy: fallbackSrv.submittedBy,
+      });
+
       toast.success(isPlatformAdmin ? `"${fallbackSrv.name}" registered and published!` : `Request sent to Admin for approval!`);
     } finally {
       setIsSubmittingSrv(false);

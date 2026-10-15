@@ -27,11 +27,20 @@ export default function AdminDashboardPage() {
 
   const loadData = async () => {
     try {
+      const localList = getLocalVerifications();
       const res = await fetch('/api/admin/verifications');
       if (res.ok) {
         const data = await res.json();
-        if (data.success && (data.requests || data.data)) {
-          setVerifications(data.requests || data.data);
+        const incoming = data.requests || data.data;
+        if (data.success && Array.isArray(incoming)) {
+          const merged = [...incoming];
+          for (const localItem of localList) {
+            const exists = merged.some((m: any) => m.id === localItem.id || m.name?.toLowerCase() === localItem.name?.toLowerCase());
+            if (!exists) {
+              merged.unshift(localItem);
+            }
+          }
+          setVerifications(merged);
           return;
         }
       }

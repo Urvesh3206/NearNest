@@ -229,6 +229,43 @@ export async function registerServiceProviderAction(payload: {
 
   const updated = [newProvider, ...current];
   saveStoredProviders(updated);
+
+  // Sync to nearnest_verifications_db and nearnest_custom_services
+  if (typeof window !== 'undefined') {
+    try {
+      const verifRaw = localStorage.getItem('nearnest_verifications_db');
+      let verifList = verifRaw ? JSON.parse(verifRaw) : [];
+      if (!Array.isArray(verifList)) verifList = [];
+      const exists = verifList.some((v: any) => v.id === newProvider.id || v.name.toLowerCase() === newProvider.name.toLowerCase());
+      if (!exists) {
+        verifList.unshift({
+          id: newProvider.id,
+          name: newProvider.name,
+          category: newProvider.category,
+          type: 'service',
+          requestType: 'service',
+          title: newProvider.name,
+          subtitle: `${newProvider.category} • ${newProvider.hourlyRate} • ${newProvider.location}`,
+          phone: newProvider.phone,
+          email: newProvider.email,
+          address: newProvider.location,
+          location: newProvider.location,
+          rate: newProvider.hourlyRate,
+          hourlyRate: newProvider.hourlyRate,
+          experience: newProvider.experience,
+          status: 'PENDING',
+          verified: false,
+          avatar: newProvider.avatar,
+          submittedBy: newProvider.submittedBy || 'Portal Registration',
+          createdAt: newProvider.createdAt,
+        });
+        localStorage.setItem('nearnest_verifications_db', JSON.stringify(verifList));
+      }
+    } catch (e) {
+      console.warn('Sync to verifications failed:', e);
+    }
+  }
+
   return { success: true, provider: newProvider };
 }
 
@@ -238,7 +275,7 @@ export async function approveServiceProviderAction(id: string) {
   let updated = false;
 
   const modified = current.map((p) => {
-    if (p.id === id) {
+    if (p.id === id || p.name.toLowerCase() === id.toLowerCase()) {
       updated = true;
       return {
         ...p,
@@ -251,6 +288,29 @@ export async function approveServiceProviderAction(id: string) {
 
   if (updated) {
     saveStoredProviders(modified);
+
+    // Cross-sync to verifications and custom services
+    if (typeof window !== 'undefined') {
+      try {
+        const verifRaw = localStorage.getItem('nearnest_verifications_db');
+        if (verifRaw) {
+          const vList = JSON.parse(verifRaw);
+          if (Array.isArray(vList)) {
+            const vMod = vList.map((v: any) => (v.id === id || v.name.toLowerCase() === id.toLowerCase() ? { ...v, status: 'APPROVED', verified: true } : v));
+            localStorage.setItem('nearnest_verifications_db', JSON.stringify(vMod));
+          }
+        }
+        const custRaw = localStorage.getItem('nearnest_custom_services');
+        if (custRaw) {
+          const cList = JSON.parse(custRaw);
+          if (Array.isArray(cList)) {
+            const cMod = cList.map((c: any) => (c.id === id || c.name.toLowerCase() === id.toLowerCase() ? { ...c, status: 'APPROVED', verified: true } : c));
+            localStorage.setItem('nearnest_custom_services', JSON.stringify(cMod));
+          }
+        }
+      } catch (e) {}
+    }
+
     return { success: true, message: 'Provider APPROVED successfully' };
   }
   return { success: false, error: 'Provider not found' };
@@ -262,7 +322,7 @@ export async function rejectServiceProviderAction(id: string) {
   let updated = false;
 
   const modified = current.map((p) => {
-    if (p.id === id) {
+    if (p.id === id || p.name.toLowerCase() === id.toLowerCase()) {
       updated = true;
       return {
         ...p,
@@ -275,6 +335,29 @@ export async function rejectServiceProviderAction(id: string) {
 
   if (updated) {
     saveStoredProviders(modified);
+
+    // Cross-sync to verifications and custom services
+    if (typeof window !== 'undefined') {
+      try {
+        const verifRaw = localStorage.getItem('nearnest_verifications_db');
+        if (verifRaw) {
+          const vList = JSON.parse(verifRaw);
+          if (Array.isArray(vList)) {
+            const vMod = vList.map((v: any) => (v.id === id || v.name.toLowerCase() === id.toLowerCase() ? { ...v, status: 'REJECTED', verified: false } : v));
+            localStorage.setItem('nearnest_verifications_db', JSON.stringify(vMod));
+          }
+        }
+        const custRaw = localStorage.getItem('nearnest_custom_services');
+        if (custRaw) {
+          const cList = JSON.parse(custRaw);
+          if (Array.isArray(cList)) {
+            const cMod = cList.map((c: any) => (c.id === id || c.name.toLowerCase() === id.toLowerCase() ? { ...c, status: 'REJECTED', verified: false } : c));
+            localStorage.setItem('nearnest_custom_services', JSON.stringify(cMod));
+          }
+        }
+      } catch (e) {}
+    }
+
     return { success: true, message: 'Provider REJECTED' };
   }
   return { success: false, error: 'Provider not found' };
