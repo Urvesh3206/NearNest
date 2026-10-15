@@ -76,29 +76,39 @@ export default function ServiceDashboardPage() {
           </p>
         </div>
 
-        {/* Realtime Availability Switch */}
-        <div className="flex items-center gap-3 bg-surface-subtle p-2 rounded-2xl border border-border-hairline shrink-0">
-          <div className="text-right">
-            <span className="text-xs font-bold text-text-primary block">
-              {isAvailable ? 'Available for Jobs' : 'Marked as Busy'}
-            </span>
-            <span className="text-[10px] text-text-tertiary">Rate: ₹299 / Visit</span>
-          </div>
-          <button
-            onClick={() => {
-              setIsAvailable(!isAvailable);
-              toast.success(`Schedule status: ${!isAvailable ? 'Available' : 'Busy'}`);
-            }}
-            className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
-              isAvailable ? 'bg-blue-600' : 'bg-slate-400'
-            }`}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+          <Link
+            href="/join-pro"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-sm"
           >
-            <div
-              className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                isAvailable ? 'translate-x-6' : 'translate-x-0'
+            <Wrench className="w-3.5 h-3.5" />
+            <span>Join as New Pro</span>
+          </Link>
+
+          {/* Realtime Availability Switch */}
+          <div className="flex items-center gap-3 bg-surface-subtle p-2 rounded-2xl border border-border-hairline shrink-0">
+            <div className="text-right">
+              <span className="text-xs font-bold text-text-primary block">
+                {isAvailable ? 'Available for Jobs' : 'Marked as Busy'}
+              </span>
+              <span className="text-[10px] text-text-tertiary">Rate: ₹299 / Visit</span>
+            </div>
+            <button
+              onClick={() => {
+                setIsAvailable(!isAvailable);
+                toast.success(`Schedule status: ${!isAvailable ? 'Available' : 'Busy'}`);
+              }}
+              className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+                isAvailable ? 'bg-blue-600' : 'bg-slate-400'
               }`}
-            />
-          </button>
+            >
+              <div
+                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                  isAvailable ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 

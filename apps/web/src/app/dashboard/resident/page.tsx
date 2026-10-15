@@ -77,7 +77,14 @@ export default function ResidentDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Link
+            href="/dashboard/resident/services"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md"
+          >
+            <Wrench className="w-4 h-4" />
+            <span>Nearby Verified Services</span>
+          </Link>
           <Link
             href="/society"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-surface border border-border-hairline text-text-primary font-semibold text-xs transition-all"
@@ -87,10 +94,10 @@ export default function ResidentDashboardPage() {
           </Link>
           <Link
             href="/chat"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-surface border border-border-hairline text-text-primary font-semibold text-xs transition-all"
           >
-            <MessageCircle className="w-4 h-4" />
-            <span>Resident Chat</span>
+            <MessageCircle className="w-4 h-4 text-emerald-500" />
+            <span>Chat</span>
           </Link>
         </div>
       </div>

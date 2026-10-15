@@ -87,13 +87,22 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs transition-all shadow-md shrink-0"
-        >
-          <span>Open Full Admin Panel</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Link
+            href="/dashboard/admin/approvals"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs transition-all shadow-md"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Service Pro Approvals</span>
+          </Link>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-surface border border-border-hairline text-text-primary font-semibold text-xs transition-all"
+          >
+            <span>Full Admin ERP</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards */}

@@ -64,6 +64,12 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum ServiceProviderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum MessageType {
   TEXT
   IMAGE
@@ -122,6 +128,7 @@ model User {
   CivicIssue             CivicIssue[]
   Subscription           Subscription[]
   Report                 Report[]
+  resident               Resident?
 }
 
 model Profile {
@@ -135,6 +142,7 @@ model Profile {
   state             String?
   country           String?
   zipCode           String?
+  pincode           String?
   latitude          Float?
   longitude         Float?
   societyId         String?
@@ -146,6 +154,20 @@ model Profile {
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   society Society? @relation(fields: [societyId], references: [id])
+}
+
+model Resident {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  flatUnit  String?
+  pincode   String?
+  latitude  Float?
+  longitude Float?
+  societyId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PrivacySettings {
@@ -511,22 +533,27 @@ model Appointment {
 }
 
 model ServiceProvider {
-  id                 String             @id @default(cuid())
-  userId             String             @unique
+  id                 String                @id @default(cuid())
+  userId             String                @unique
   category           String
   title              String
   description        String?
   experience         Int
   priceRange         String?
+  hourlyRate         Decimal?
   portfolio          String[]
-  isVerified         Boolean            @default(false)
-  verificationStatus VerificationStatus @default(PENDING)
-  avgRating          Float              @default(0)
-  totalReviews       Int                @default(0)
-  locationRadius     Int
-  isAvailable        Boolean            @default(true)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  isVerified         Boolean               @default(false)
+  verificationStatus VerificationStatus    @default(PENDING)
+  status             ServiceProviderStatus @default(PENDING)
+  pincode            String?
+  latitude           Float?
+  longitude          Float?
+  locationRadius     Int                   @default(5)
+  avgRating          Float                 @default(0)
+  totalReviews       Int                   @default(0)
+  isAvailable        Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings ServiceBooking[]

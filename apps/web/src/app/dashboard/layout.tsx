@@ -59,9 +59,12 @@ export default function DashboardRoutesLayout({
 
   const navTabs = [
     { name: '👑 Admin ERP', href: '/dashboard/admin', role: 'ADMIN' },
+    { name: '🛡️ Approvals Queue', href: '/dashboard/admin/approvals', role: 'ADMIN' },
     { name: '🏡 Resident Hub', href: '/dashboard/resident', role: 'RESIDENT' },
+    { name: '📍 Nearby Services', href: '/dashboard/resident/services', role: 'RESIDENT' },
     { name: '🏪 Business Console', href: '/dashboard/business', role: 'BUSINESS' },
     { name: '🔧 Service Pro Hub', href: '/dashboard/service', role: 'SERVICE_PROVIDER' },
+    { name: '📝 Join as Pro', href: '/join-pro', role: 'SERVICE_PROVIDER' },
   ];
 
   return (
