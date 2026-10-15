@@ -31,15 +31,21 @@ function saveDbData(data: any) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const includeAll = searchParams.get('all') === 'true';
   const data = getDbData();
-  return NextResponse.json({ success: true, services: data.services || [] });
+  let services = data.services || [];
+  if (!includeAll) {
+    services = services.filter((s: any) => s.status === 'APPROVED');
+  }
+  return NextResponse.json({ success: true, services });
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, category, location, rate, experience, speciality, phone, avatar } = body;
+    const { name, category, location, rate, experience, speciality, phone, avatar, isAdmin, submittedBy } = body;
 
     if (!name || !category) {
       return NextResponse.json(
@@ -49,15 +55,20 @@ export async function POST(req: Request) {
     }
 
     const data = getDbData();
+    const isOwnerAdmin = Boolean(isAdmin) || (submittedBy && submittedBy.toLowerCase().includes('urvesh')) || name.toLowerCase().includes('urvesh');
+    const initialStatus = isOwnerAdmin ? 'APPROVED' : 'PENDING';
+    const isVerified = isOwnerAdmin;
+
     const newService = {
       id: `srv_custom_${Date.now()}`,
       name: name.trim(),
       category: category.trim(),
       location: location?.trim() || 'Ajeenkya Residency & Society',
       distance: '0.2 km',
-      verified: true,
+      verified: isVerified,
+      status: initialStatus,
       rating: 5.0,
-      reviews: 1,
+      reviews: 0,
       rate: rate?.trim() || '₹350/hr',
       experience: experience?.trim() || '3 years',
       availableToday: true,
@@ -70,6 +81,7 @@ export async function POST(req: Request) {
         speciality?.trim() || `Professional ${category} services with guaranteed neighborhood satisfaction`,
       phone: phone?.trim() || '+91 9373571631',
       isCustom: true,
+      submittedBy: submittedBy || name || 'Community Member',
       createdAt: new Date().toISOString(),
     };
 

@@ -114,6 +114,7 @@ function BusinessesContent() {
     }
     setIsSubmittingBiz(true);
     try {
+      const isAdmin = user?.role === 'ADMIN';
       const payload = {
         name: bizName,
         category: bizCategory,
@@ -122,6 +123,7 @@ function BusinessesContent() {
         tagline: bizTagline || `Verified neighborhood ${bizCategory} serving ${activeLocationName}`,
         coverPhoto: bizCover || "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop",
         owner: user?.name || "Urvesh Rane",
+        isAdmin,
         lat: currentCoords.lat,
         lng: currentCoords.lng,
       };
@@ -136,11 +138,19 @@ function BusinessesContent() {
         const updated = [result.business, ...customBusinesses.filter(b => b.id !== result.business.id)];
         setCustomBusinesses(updated);
         localStorage.setItem('nearnest_custom_businesses', JSON.stringify(updated));
-        toast.success(`"${result.business.name}" added to database! 🎉`);
+        if (result.business.status === 'APPROVED') {
+          toast.success(`Business "${result.business.name}" verified & published live! 🎉`);
+        } else {
+          toast.success(`Business listing submitted to Admin Urvesh Rane for verification. Once approved, it will be published live!`, {
+            duration: 6000,
+            icon: '📋',
+          });
+        }
       } else {
         throw new Error(result.error || "Save failed");
       }
     } catch (err) {
+      const isPlatformAdmin = user?.role === 'ADMIN';
       const fallbackBiz = {
         id: `biz_custom_${Date.now()}`,
         name: bizName,
@@ -151,7 +161,7 @@ function BusinessesContent() {
         distance: "0.2 km",
         address: bizAddress ? `${bizAddress}, ${bizArea || activeLocationName}` : `${bizArea || activeLocationName}`,
         rating: 5.0,
-        reviews: 1,
+        reviews: 0,
         phone: bizPhone || user?.phone || "+91 9373571631",
         openNow: true,
         coverPhoto: bizCover || "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop",
@@ -159,11 +169,13 @@ function BusinessesContent() {
         tagline: bizTagline || `Verified neighborhood ${bizCategory} serving ${activeLocationName}`,
         owner: user?.name || "Urvesh Rane",
         isCustom: true,
+        status: isPlatformAdmin ? 'APPROVED' : 'PENDING',
+        verified: isPlatformAdmin,
       };
       const updated = [fallbackBiz, ...customBusinesses];
       setCustomBusinesses(updated);
       localStorage.setItem('nearnest_custom_businesses', JSON.stringify(updated));
-      toast.success(`"${fallbackBiz.name}" added to local database! 🎉`);
+      toast.success(isPlatformAdmin ? `"${fallbackBiz.name}" added to database!` : `Listing submitted for Admin approval!`);
     } finally {
       setIsSubmittingBiz(false);
       setIsRegisterModalOpen(false);
@@ -320,7 +332,16 @@ function BusinessesContent() {
   });
 
   const filteredBusinesses = allBusinesses.filter((b) => {
-    if (b.distanceKm > maxRadiusKm) return false;
+    // Hide unapproved/rejected custom businesses unless viewer is Admin or the business owner
+    if ((b as any).isCustom && (b as any).status === 'PENDING') {
+      const isOwner = user?.name && (b as any).owner === user.name;
+      const isPlatformAdmin = user?.role === 'ADMIN';
+      if (!isOwner && !isPlatformAdmin) return false;
+    }
+    if ((b as any).isCustom && (b as any).status === 'REJECTED') {
+      return false;
+    }
+    if (b.distanceKm > maxRadiusKm && !(b as any).isCustom) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -973,9 +994,15 @@ function BusinessesContent() {
                       <img src={business.coverPhoto} alt={business.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
                         {(business as any).isCustom && (
-                          <span className="px-2 py-0.5 bg-brand-600 text-white font-bold text-[10px] rounded-md shadow-sm">
-                            ⭐ My Business
-                          </span>
+                          (business as any).status === 'PENDING' ? (
+                            <span className="px-2 py-0.5 bg-amber-500 text-white font-bold text-[10px] rounded-md shadow-sm border border-amber-300">
+                              ⏳ Pending Approval
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-brand-600 text-white font-bold text-[10px] rounded-md shadow-sm">
+                              ⭐ Verified Business
+                            </span>
+                          )
                         )}
                         <span className="px-2 py-0.5 bg-surface/90 backdrop-blur text-[11px] font-semibold rounded-md shadow-sm text-text-primary">
                           {business.category}

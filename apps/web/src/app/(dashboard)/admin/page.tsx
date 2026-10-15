@@ -1,18 +1,105 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Users, Activity, AlertTriangle, ShieldCheck, DollarSign, Send, FileText, CheckCircle, XCircle, Search, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, Activity, AlertTriangle, ShieldCheck, DollarSign, Send, FileText, 
+  CheckCircle, XCircle, Search, Download, Trash2, Clock, Check, RefreshCw, 
+  Briefcase, Store, Loader2, Sparkles, MapPin, Phone 
+} from 'lucide-react';
 import { Card, Button, Badge, Input, Select, Textarea, Tabs } from '@/components/ui';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import toast from 'react-hot-toast';
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('verifications');
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [counts, setCounts] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+
+  const fetchRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const res = await fetch('/api/admin/verifications');
+      const data = await res.json();
+      if (data.success) {
+        setRequests(data.requests || []);
+        if (data.counts) setCounts(data.counts);
+      }
+    } catch (err) {
+      console.error('Error fetching verification requests:', err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleAction = async (type: 'business' | 'service', id: string, action: 'APPROVE' | 'REJECT', name: string) => {
+    try {
+      const res = await fetch('/api/admin/verifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message, {
+          icon: action === 'APPROVE' ? '✅' : '❌',
+        });
+        fetchRequests();
+      } else {
+        toast.error(data.error || 'Failed to update request status');
+      }
+    } catch (err) {
+      toast.error('Network error updating request');
+    }
+  };
+
+  const handleDelete = async (type: string, id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${name}" from the database?`)) return;
+    try {
+      const res = await fetch(`/api/admin/verifications?type=${type}&id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Removed "${name}" from database`);
+        fetchRequests();
+      }
+    } catch (err) {
+      toast.error('Failed to delete request');
+    }
+  };
+
+  const filteredRequests = requests.filter((r) => {
+    if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
+    if (searchFilter) {
+      const q = searchFilter.toLowerCase();
+      return (
+        r.name?.toLowerCase().includes(q) ||
+        r.category?.toLowerCase().includes(q) ||
+        r.location?.toLowerCase().includes(q) ||
+        r.address?.toLowerCase().includes(q) ||
+        r.submittedBy?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   const stats = [
     { label: 'Total Residents', value: '1,240', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Active Daily Users', value: '89%', icon: Activity, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20' },
     { label: 'Open Complaints', value: '4', icon: AlertTriangle, color: 'text-coral-500', bg: 'bg-coral-50 dark:bg-coral-900/20' },
-    { label: 'Pending Verifications', value: '12', icon: ShieldCheck, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
+    { 
+      label: 'Pending Verifications', 
+      value: counts.pending.toString(), 
+      subtext: counts.pending > 0 ? 'Requires your approval' : 'All clear', 
+      icon: ShieldCheck, 
+      color: counts.pending > 0 ? 'text-amber-500' : 'text-green-500', 
+      bg: counts.pending > 0 ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-green-50 dark:bg-green-900/20' 
+    },
     { label: 'Maintenance Collected', value: '₹4,85,000', subtext: '96% of total', icon: DollarSign, color: 'text-brand-500', bg: 'bg-brand-50 dark:bg-brand-900/20' },
   ];
 
@@ -26,9 +113,15 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Society Admin Panel</h1>
-          <p className="text-text-secondary mt-1">Manage platform operations and community metrics</p>
+          <p className="text-text-secondary mt-1">Manage platform operations, member verifications, and approvals</p>
         </div>
-        <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Export Full Report</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={fetchRequests} className="flex items-center gap-1.5 text-xs">
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingRequests ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+          <Button variant="outline" className="text-xs"><Download className="w-4 h-4 mr-2" /> Export Report</Button>
+        </div>
       </div>
 
       {/* Analytics Overview */}
@@ -54,7 +147,7 @@ export default function AdminDashboardPage() {
       <div className="bg-surface border border-border-hairline rounded-xl overflow-hidden mt-8">
         <Tabs
           tabs={[
-            { id: 'verifications', label: 'Verification Requests' },
+            { id: 'verifications', label: `Verification Requests (${counts.pending} pending)` },
             { id: 'complaints', label: 'Complaints Manager' },
             { id: 'broadcast', label: 'Broadcast Announcement' },
             { id: 'financials', label: 'Financials & Dues' },
@@ -66,30 +159,177 @@ export default function AdminDashboardPage() {
         <div className="p-6">
           {activeTab === 'verifications' && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-text-primary">Pending Resident & Business Verifications</h3>
-                <Input placeholder="Search requests..." className="w-64" />
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <div>
+                  <h3 className="font-semibold text-text-primary">Member, Service & Business Approvals</h3>
+                  <p className="text-xs text-text-secondary">Approve friend registrations to publish them live to the public website</p>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-60">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                    <Input 
+                      placeholder="Search applicant or skill..." 
+                      value={searchFilter}
+                      onChange={(e) => setSearchFilter(e.target.value)}
+                      className="pl-9 text-xs" 
+                    />
+                  </div>
+                </div>
               </div>
-              
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="flex items-center justify-between p-4 border border-border-hairline rounded-lg hover:bg-surface-subtle transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold">
-                      {item === 1 ? 'A' : item === 2 ? 'M' : 'S'}
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-text-primary">
-                        {item === 1 ? 'Alice Freeman' : item === 2 ? 'Modern Bakery (Business)' : 'Sam Wilson'}
-                      </h4>
-                      <p className="text-sm text-text-secondary">
-                        {item === 1 ? 'Apt 4B, Tower 2 • Uploaded Lease Agreement' : item === 2 ? 'Shop 12, Commercial Block • Uploaded License' : 'Apt 1C, Tower 1 • Uploaded ID Card'}
+
+              {/* Status Filter Tabs */}
+              <div className="flex gap-2 border-b border-border-hairline pb-3">
+                {[
+                  { key: 'ALL', label: `All Requests (${counts.total})` },
+                  { key: 'PENDING', label: `⏳ Pending (${counts.pending})` },
+                  { key: 'APPROVED', label: `✅ Approved (${counts.approved})` },
+                  { key: 'REJECTED', label: `❌ Rejected (${counts.rejected})` },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key as any)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      statusFilter === f.key
+                        ? 'bg-brand-500 text-white shadow-sm'
+                        : 'bg-surface-subtle text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {loadingRequests && (
+                <div className="py-12 text-center text-text-secondary">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-500" />
+                  <p className="text-xs">Loading requests from database...</p>
+                </div>
+              )}
+
+              {!loadingRequests && filteredRequests.length === 0 && (
+                <div className="py-12 text-center bg-surface-subtle/50 rounded-xl p-6">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-text-primary">No {statusFilter.toLowerCase()} requests found</p>
+                  <p className="text-xs text-text-secondary mt-1">When friends or residents apply to join, their profiles will appear here for your review.</p>
+                </div>
+              )}
+
+              {!loadingRequests && filteredRequests.map((req) => (
+                <div 
+                  key={req.id} 
+                  className={`flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-xl gap-4 transition-colors ${
+                    req.status === 'PENDING'
+                      ? 'border-amber-300 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20'
+                      : req.status === 'APPROVED'
+                      ? 'border-green-200 dark:border-green-900/40 bg-surface'
+                      : 'border-coral-200 dark:border-coral-900/40 bg-coral-50/30 dark:bg-coral-950/20'
+                  }`}
+                >
+                  <div className="flex items-start gap-3.5">
+                    <img 
+                      src={req.avatar || req.logo || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(req.name)}`} 
+                      alt={req.name} 
+                      className="w-12 h-12 rounded-xl object-cover border border-border-hairline bg-surface shrink-0" 
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-sm text-text-primary">{req.name}</h4>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          req.requestType === 'service'
+                            ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                            : 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
+                        }`}>
+                          {req.requestType === 'service' ? '🔧 Service Provider' : '🏪 Local Business'}
+                        </span>
+                        
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          req.status === 'PENDING'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300'
+                            : req.status === 'APPROVED'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-950/80 dark:text-green-300'
+                            : 'bg-coral-100 text-coral-800 dark:bg-coral-950/80 dark:text-coral-300'
+                        }`}>
+                          {req.status === 'PENDING' ? <Clock className="w-3 h-3 animate-pulse" /> : req.status === 'APPROVED' ? <Check className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          <span>{req.status}</span>
+                        </span>
+                      </div>
+
+                      <p className="text-xs font-medium text-text-secondary mt-1">
+                        <span className="text-brand-600 font-semibold">{req.category}</span>
+                        {req.rate && <span className="text-text-primary ml-1.5">• {req.rate}</span>}
+                        {req.location && <span className="ml-1.5">• {req.location}</span>}
+                        {req.address && <span className="ml-1.5">• {req.address}</span>}
                       </p>
+
+                      {req.speciality && (
+                        <p className="text-[11px] text-text-tertiary mt-1 line-clamp-1 italic">
+                          "{req.speciality}"
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-3 text-[11px] text-text-secondary mt-1.5">
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-text-tertiary" /> {req.phone}
+                        </span>
+                        <span>• Submitted by: <strong className="text-text-primary">{req.submittedBy || req.owner || req.name}</strong></span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="text-text-secondary hover:text-text-primary">View Docs</Button>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"><CheckCircle className="w-4 h-4 mr-1" /> Approve</Button>
-                    <Button size="sm" variant="outline" className="text-coral-600 border-coral-200 hover:bg-coral-50"><XCircle className="w-4 h-4 mr-1" /> Reject</Button>
+
+                  {/* Admin Actions */}
+                  <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                    {req.status === 'PENDING' && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleAction(req.requestType, req.id, 'APPROVE', req.name)}
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 shadow-sm flex items-center gap-1 font-semibold"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Approve & Publish</span>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleAction(req.requestType, req.id, 'REJECT', req.name)}
+                          className="text-coral-600 border-coral-200 hover:bg-coral-50 text-xs px-2.5 font-semibold"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          <span>Reject</span>
+                        </Button>
+                      </>
+                    )}
+
+                    {req.status === 'APPROVED' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleAction(req.requestType, req.id, 'REJECT', req.name)}
+                        className="text-text-secondary hover:text-coral-600 text-xs px-2.5"
+                        title="Revoke approval"
+                      >
+                        Revoke Approval
+                      </Button>
+                    )}
+
+                    {req.status === 'REJECTED' && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleAction(req.requestType, req.id, 'APPROVE', req.name)}
+                        className="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" /> Re-Approve
+                      </Button>
+                    )}
+
+                    <button 
+                      onClick={() => handleDelete(req.requestType, req.id, req.name)}
+                      className="p-2 hover:bg-coral-50 text-coral-600 rounded-lg transition-colors"
+                      title="Permanently remove"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}

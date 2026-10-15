@@ -205,6 +205,7 @@ function ServicesContent() {
     }
     setIsSubmittingSrv(true);
     try {
+      const isAdmin = user?.role === 'ADMIN';
       const payload = {
         name: srvName,
         category: srvCategory,
@@ -214,6 +215,8 @@ function ServicesContent() {
         speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
         phone: srvPhone,
         avatar: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srvName)}&backgroundColor=b6e3f4`,
+        isAdmin,
+        submittedBy: `${user?.name || srvName} (${user?.role || 'Resident'})`,
       };
 
       const res = await fetch('/api/services', {
@@ -226,20 +229,29 @@ function ServicesContent() {
         const updated = [result.service, ...customServices.filter(s => s.id !== result.service.id)];
         setCustomServices(updated);
         localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
-        toast.success(`Service Provider "${result.service.name}" added to database! 🎉`);
+        if (result.service.status === 'APPROVED') {
+          toast.success(`Service Provider "${result.service.name}" verified & published live! 🎉`);
+        } else {
+          toast.success(`Application sent to Admin Urvesh Rane for verification! Once approved, your profile will be published live.`, {
+            duration: 6000,
+            icon: '📋',
+          });
+        }
       } else {
         throw new Error(result.error || "Save failed");
       }
     } catch (err) {
+      const isPlatformAdmin = user?.role === 'ADMIN';
       const fallbackSrv = {
         id: `srv_custom_${Date.now()}`,
         name: srvName,
         category: srvCategory,
         location: srvNeighborhood,
         distance: "0.2 km",
-        verified: true,
+        verified: isPlatformAdmin,
+        status: isPlatformAdmin ? 'APPROVED' : 'PENDING',
         rating: 5.0,
-        reviews: 1,
+        reviews: 0,
         rate: srvRate,
         experience: srvExperience,
         availableToday: true,
@@ -247,11 +259,12 @@ function ServicesContent() {
         speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
         phone: srvPhone,
         isCustom: true,
+        submittedBy: `${user?.name || srvName} (${user?.role || 'Resident'})`,
       };
       const updated = [fallbackSrv, ...customServices];
       setCustomServices(updated);
       localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
-      toast.success(`"${fallbackSrv.name}" registered and saved locally! 🎉`);
+      toast.success(isPlatformAdmin ? `"${fallbackSrv.name}" registered and published!` : `Request sent to Admin for approval!`);
     } finally {
       setIsSubmittingSrv(false);
       setIsJoinModalOpen(false);
@@ -285,6 +298,16 @@ function ServicesContent() {
   const allProviders = [...customServices, ...PROVIDERS];
 
   const filteredProviders = allProviders.filter(p => {
+    // Hide unapproved/rejected custom providers from general public, unless viewer is Admin or the submitter
+    if (p.isCustom && p.status === 'PENDING') {
+      const isOwner = user?.name && (p.submittedBy?.includes(user.name) || p.name === user.name);
+      const isPlatformAdmin = user?.role === 'ADMIN';
+      if (!isOwner && !isPlatformAdmin) return false;
+    }
+    if (p.isCustom && p.status === 'REJECTED') {
+      return false;
+    }
+
     if (selectedNeighborhood !== "All Locations" && !p.location.toLowerCase().includes(selectedNeighborhood.toLowerCase())) {
       return false;
     }
@@ -452,9 +475,15 @@ function ServicesContent() {
                           </span>
                         )}
                         {(provider as any).isCustom && (
-                          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded">
-                            ⭐ My Profile
-                          </span>
+                          (provider as any).status === 'PENDING' ? (
+                            <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded border border-amber-300">
+                              ⏳ Pending Approval
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded">
+                              ⭐ Verified Pro
+                            </span>
+                          )
                         )}
                       </div>
                       <span className="text-xs text-brand-600 font-semibold">{provider.category}</span>

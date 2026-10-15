@@ -18,6 +18,8 @@
       "tagline": "Quality daily essentials, organic vegetables & 15-minute doorstep society delivery",
       "owner": "Urvesh Rane",
       "isCustom": true,
+      "status": "APPROVED",
+      "verified": true,
       "createdAt": "2026-10-15T00:00:00.000Z"
     }
   ],
@@ -38,7 +40,29 @@
       "speciality": "Smart home automation, Wi-Fi mesh setup, CCTV security & computer hardware diagnostics",
       "phone": "+91 9373571631",
       "isCustom": true,
+      "status": "APPROVED",
+      "submittedBy": "Urvesh Rane (Admin)",
       "createdAt": "2026-10-15T00:00:00.000Z"
+    },
+    {
+      "id": "srv_pending_demo",
+      "name": "Aarav Sharma",
+      "category": "Electrician",
+      "location": "Greenfield Park, Tower B",
+      "distance": "0.4 km",
+      "verified": false,
+      "rating": 5.0,
+      "reviews": 0,
+      "rate": "₹280/hr",
+      "experience": "3 years",
+      "availableToday": true,
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav%20Sharma&backgroundColor=c0aede",
+      "speciality": "Certified residential electrical wiring, switchboard upgrades & inverter battery installation",
+      "phone": "+91 98220 11223",
+      "isCustom": true,
+      "status": "PENDING",
+      "submittedBy": "Aarav Sharma (Resident / Friend)",
+      "createdAt": "2026-10-15T05:30:00.000Z"
     }
   ]
 }

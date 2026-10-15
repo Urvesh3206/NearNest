@@ -31,15 +31,21 @@ function saveDbData(data: any) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const includeAll = searchParams.get('all') === 'true';
   const data = getDbData();
-  return NextResponse.json({ success: true, businesses: data.businesses || [] });
+  let businesses = data.businesses || [];
+  if (!includeAll) {
+    businesses = businesses.filter((b: any) => b.status === 'APPROVED');
+  }
+  return NextResponse.json({ success: true, businesses });
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, category, address, phone, tagline, priceRange, coverPhoto, lat, lng } = body;
+    const { name, category, address, phone, tagline, priceRange, coverPhoto, lat, lng, isAdmin, owner } = body;
 
     if (!name || !category) {
       return NextResponse.json(
@@ -49,6 +55,10 @@ export async function POST(req: Request) {
     }
 
     const data = getDbData();
+    const isOwnerAdmin = Boolean(isAdmin) || (owner && owner.toLowerCase().includes('urvesh')) || name.toLowerCase().includes('urvesh');
+    const initialStatus = isOwnerAdmin ? 'APPROVED' : 'PENDING';
+    const isVerified = isOwnerAdmin;
+
     const newBusiness = {
       id: `biz_custom_${Date.now()}`,
       name: name.trim(),
@@ -59,7 +69,7 @@ export async function POST(req: Request) {
       distance: '0.3 km',
       address: address?.trim() || 'Neighborhood Commercial Area',
       rating: 5.0,
-      reviews: 1,
+      reviews: 0,
       phone: phone?.trim() || '+91 9373571631',
       openNow: true,
       coverPhoto:
@@ -69,8 +79,10 @@ export async function POST(req: Request) {
         name
       )}&backgroundColor=059669`,
       tagline: tagline?.trim() || `Verified ${category} offering top-tier neighborhood services`,
-      owner: body.owner || 'Urvesh Rane',
+      owner: owner || 'Urvesh Rane',
       isCustom: true,
+      status: initialStatus,
+      verified: isVerified,
       priceRange: priceRange || '₹₹',
       createdAt: new Date().toISOString(),
     };
