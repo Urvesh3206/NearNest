@@ -127,3 +127,5 @@ export function RoleSwitcher() {
     </div>
   );
 }
+
+export { RbacProfileSwitcher } from './RbacProfileSwitcher';

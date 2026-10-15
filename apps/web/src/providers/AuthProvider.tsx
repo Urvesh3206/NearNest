@@ -111,25 +111,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(DEMO_PROFILES.ADMIN);
   const [loading, setLoading] = useState(true);
 
+  // Helper to sync role with cookie for Next.js middleware route protection
+  const syncCookie = (role: UserRole) => {
+    if (typeof document !== 'undefined') {
+      document.cookie = `user_role=${role}; path=/; max-age=31536000; SameSite=Lax`;
+    }
+  };
+
   // Initialize from localStorage
   useEffect(() => {
     try {
       const isLoggedOut = localStorage.getItem('nearnest_logged_out') === 'true';
       if (isLoggedOut) {
         setUser(null);
+        if (typeof document !== 'undefined') {
+          document.cookie = `user_role=; path=/; max-age=0; SameSite=Lax`;
+        }
       } else {
         const stored = localStorage.getItem('nearnest_profile');
         if (stored) {
-          setUser(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          setUser(parsed);
+          syncCookie(parsed.role || 'ADMIN');
         } else {
           // Default first-time experience as ADMIN
           localStorage.setItem('nearnest_profile', JSON.stringify(DEMO_PROFILES.ADMIN));
           setUser(DEMO_PROFILES.ADMIN);
+          syncCookie('ADMIN');
         }
       }
     } catch (e) {
       console.warn("localStorage profile parse error:", e);
       setUser(DEMO_PROFILES.ADMIN);
+      syncCookie('ADMIN');
     } finally {
       setLoading(false);
     }
@@ -157,6 +171,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('nearnest_logged_out');
     setUser(newUser);
     localStorage.setItem('nearnest_profile', JSON.stringify(newUser));
+    syncCookie(finalRole);
     toast.success(`Logged in as ${finalRole}: ${cleanName}`);
   };
 
@@ -170,6 +185,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.removeItem('nearnest_logged_out');
       setUser(profile);
       localStorage.setItem('nearnest_profile', JSON.stringify(profile));
+      syncCookie(newRole);
       toast.success(`Active Persona switched to: ${newRole} (${profile.name})`, {
         icon: newRole === 'ADMIN' ? '👑' : newRole === 'BUSINESS' ? '🏪' : newRole === 'SERVICE_PROVIDER' ? '🔧' : '🏡',
       });
@@ -184,6 +200,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
       localStorage.removeItem('nearnest_logged_out');
       localStorage.setItem('nearnest_profile', JSON.stringify(updated));
+      if (updated.role) syncCookie(updated.role);
       return updated;
     });
     toast.success('Profile updated successfully!');
@@ -194,6 +211,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     localStorage.removeItem('nearnest_profile');
     localStorage.setItem('nearnest_logged_out', 'true');
+    if (typeof document !== 'undefined') {
+      document.cookie = `user_role=; path=/; max-age=0; SameSite=Lax`;
+    }
     toast.success('You have been logged out successfully.');
     // Redirect to login page
     if (typeof window !== 'undefined') {
