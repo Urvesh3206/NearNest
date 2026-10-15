@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Building2, 
   ShieldCheck, 
@@ -24,9 +24,23 @@ export default function DashboardRoutesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, logout, loading } = useAuth();
   const currentRole = user?.role || 'ADMIN';
   const [showRbacModal, setShowRbacModal] = useState(false);
+
+  // Client-Side RBAC Route Guard for static export compatibility
+  useEffect(() => {
+    if (loading || !user) return;
+    const role = user.role;
+    if (pathname.startsWith('/dashboard/admin') && role !== 'ADMIN') {
+      router.replace(`/unauthorized?attempted=${encodeURIComponent(pathname)}&required=ADMIN&current=${role}`);
+    } else if (pathname.startsWith('/dashboard/business') && role !== 'BUSINESS' && role !== 'ADMIN') {
+      router.replace(`/unauthorized?attempted=${encodeURIComponent(pathname)}&required=BUSINESS&current=${role}`);
+    } else if (pathname.startsWith('/dashboard/service') && role !== 'SERVICE_PROVIDER' && role !== 'ADMIN') {
+      router.replace(`/unauthorized?attempted=${encodeURIComponent(pathname)}&required=SERVICE_PROVIDER&current=${role}`);
+    }
+  }, [pathname, user, loading, router]);
 
   const roleMeta = {
     ADMIN: {
