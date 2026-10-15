@@ -17,6 +17,7 @@ import {
   Lock
 } from 'lucide-react';
 import { registerServiceProviderAction } from '@/app/actions/serviceProviderActions';
+import { addPendingVerification } from '@/lib/verificationStore';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = [
@@ -74,6 +75,19 @@ export default function JoinServiceProPage() {
       });
 
       if (res.success) {
+        addPendingVerification({
+          name: formData.name,
+          category: formData.category,
+          type: 'service',
+          requestType: 'service',
+          rate: formData.hourlyRate,
+          hourlyRate: formData.hourlyRate,
+          phone: formData.phone,
+          email: formData.email,
+          address: `Zone ${formData.pincode}, Society Vicinity`,
+          location: `Zone ${formData.pincode}`,
+          submittedBy: `${formData.name} (Service Pro Application)`,
+        });
         setCreatedProvider(res.provider);
         setSubmittedSuccess(true);
         toast.success('Registration request submitted for Super Admin review!');

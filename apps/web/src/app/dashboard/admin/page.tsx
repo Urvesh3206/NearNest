@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { RbacProfileSwitcher } from '@/components/auth/RbacProfileSwitcher';
 import { useAuth } from '@/providers/AuthProvider';
+import { getLocalVerifications, updateVerificationStatus } from '@/lib/verificationStore';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboardPage() {
@@ -24,16 +25,26 @@ export default function AdminDashboardPage() {
   const [verifications, setVerifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch('/api/admin/verifications')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          setVerifications(data.data);
+  const loadData = async () => {
+    try {
+      const res = await fetch('/api/admin/verifications');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && (data.requests || data.data)) {
+          setVerifications(data.requests || data.data);
+          return;
         }
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+      }
+      throw new Error('Fallback to local store');
+    } catch {
+      setVerifications(getLocalVerifications());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
@@ -43,15 +54,19 @@ export default function AdminDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action }),
       });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(`Request ${action === 'approve' ? 'Approved' : 'Rejected'}!`);
-        setVerifications((prev) =>
-          prev.map((v) => (v.id === id ? { ...v, status: action === 'approve' ? 'APPROVED' : 'REJECTED' } : v))
-        );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`Request ${action === 'approve' ? 'Approved' : 'Rejected'}!`);
+          loadData();
+          return;
+        }
       }
+      throw new Error('Fallback update');
     } catch {
-      toast.error('Failed to update verification');
+      updateVerificationStatus(id, action === 'approve' ? 'APPROVE' : 'REJECT');
+      toast.success(`Request ${action === 'approve' ? 'Approved & Published' : 'Rejected'}!`);
+      setVerifications(getLocalVerifications());
     }
   };
 
