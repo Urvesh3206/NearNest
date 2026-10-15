@@ -376,7 +376,7 @@ function ServicesContent() {
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingService.trim()) {
-      toast.error("Please enter the service details required");
+      toast.error("Please enter the service required");
       return;
     }
     if (!bookingUnit.trim()) {
@@ -384,12 +384,57 @@ function ServicesContent() {
       return;
     }
     setIsSubmittingBooking(true);
+
+    const providerEmail = bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
+    const targetSubject = `[NearNest Work Request] Please come to ${bookingUnit} for ${bookingService}`;
+    const targetBody = `Dear ${bookingProvider?.name},
+
+You have received an official service work order from a society member on NearNest.
+
+Please come to the society member premises at the scheduled time to inspect and complete the work:
+
+=========================================
+📍 WORK ORDER & LOCATION DETAILS:
+=========================================
+• Destination Address & Flat: ${bookingUnit}
+• Society Member: ${bookingResidentName}
+• Member Contact Phone: ${bookingPhone}
+• Member Email: ${bookingResidentEmail}
+
+=========================================
+🛠️ SERVICE DETAILS:
+=========================================
+• Service Category: ${bookingProvider?.category}
+• Work Required: ${bookingService}
+• Scheduled Date: ${bookingDate}
+• Preferred Time: ${bookingTime}
+• Estimated Rate: ${bookingProvider?.rate}
+
+=========================================
+INSTRUCTIONS FOR SERVICE PROVIDER:
+=========================================
+1. Please confirm your arrival time with the society member by replying to this email or calling ${bookingPhone}.
+2. Carry your government or NearNest ID for security gate entry.
+3. Complete the work professionally and collect payment directly as per agreed terms.
+
+Thank you,
+NearNest Community & Society Services Team`;
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(providerEmail)}&su=${encodeURIComponent(targetSubject)}&body=${encodeURIComponent(targetBody)}`;
+
+    // Automatically open Gmail with the pre-filled work order!
+    try {
+      window.open(gmailUrl, '_blank');
+    } catch (err) {
+      console.warn('Popup blocked by browser:', err);
+    }
+
     try {
       const payload = {
         providerId: bookingProvider?.id,
         providerName: bookingProvider?.name,
         providerCategory: bookingProvider?.category,
-        providerEmail: bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
+        providerEmail: providerEmail,
         providerPhone: bookingProvider?.phone || "+91 9373571631",
         residentName: bookingResidentName,
         residentEmail: bookingResidentEmail,
@@ -414,13 +459,13 @@ function ServicesContent() {
         setBookedDetails({ ...payload, id: `book_${Date.now()}` });
       }
       setBookingSuccess(true);
-      toast.success(`Booking logged! Click below to send work order to ${bookingProvider?.name}'s Gmail.`);
+      toast.success(`Hire request & Gmail work order prepared for ${bookingProvider?.name} (${providerEmail})!`);
     } catch (err) {
       setBookedDetails({
         providerId: bookingProvider?.id,
         providerName: bookingProvider?.name,
         providerCategory: bookingProvider?.category,
-        providerEmail: bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
+        providerEmail: providerEmail,
         providerPhone: bookingProvider?.phone || "+91 9373571631",
         residentName: bookingResidentName,
         residentEmail: bookingResidentEmail,
@@ -434,7 +479,7 @@ function ServicesContent() {
         id: `book_${Date.now()}`,
       });
       setBookingSuccess(true);
-      toast.success(`Booking logged successfully!`);
+      toast.success(`Hire request dispatched!`);
     } finally {
       setIsSubmittingBooking(false);
     }
@@ -842,23 +887,34 @@ NearNest Community & Society Services Team`;
                 </div>
               ) : (
                 <form onSubmit={handleBook} className="p-5 space-y-4 overflow-y-auto">
+                  {/* Service Provider Email Callout */}
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-text-primary min-w-0">
+                      <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="truncate">
+                        Work request sent to: <strong className="text-emerald-700 dark:text-emerald-400">{bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`}</strong>
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full shrink-0">Gmail</span>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-text-primary mb-1">
-                      Service Description / Problem Details *
+                      Service Required
                     </label>
-                    <textarea 
+                    <input 
                       required 
-                      rows={2}
+                      type="text" 
                       value={bookingService}
                       onChange={(e) => setBookingService(e.target.value)}
-                      placeholder="e.g. Master bathroom tap leaking continuously, needs inspection and washer replacement..." 
-                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary" 
+                      placeholder="e.g. Kitchen tap leaking, AC master cleaning..." 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Scheduled Date *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Date</label>
                       <input 
                         required 
                         type="date" 
@@ -868,7 +924,7 @@ NearNest Community & Society Services Team`;
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Preferred Time *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Preferred Time</label>
                       <input 
                         required 
                         type="time" 
@@ -879,45 +935,32 @@ NearNest Community & Society Services Team`;
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Housing Society / Complex *</label>
-                      <input 
-                        required 
-                        type="text" 
-                        value={bookingSociety}
-                        onChange={(e) => setBookingSociety(e.target.value)}
-                        placeholder="e.g. Ajeenkya Residency" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Flat / Tower / Unit No. *</label>
-                      <input 
-                        required 
-                        type="text" 
-                        value={bookingUnit}
-                        onChange={(e) => setBookingUnit(e.target.value)}
-                        placeholder="e.g. Flat 402, Tower B" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Your Address & Unit</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={bookingUnit}
+                      onChange={(e) => setBookingUnit(e.target.value)}
+                      placeholder="e.g. Block A, Apt 402, Greenfield Park" 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Name *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Name</label>
                       <input 
                         required 
                         type="text" 
                         value={bookingResidentName}
                         onChange={(e) => setBookingResidentName(e.target.value)}
-                        placeholder="e.g. Priya Deshmukh" 
+                        placeholder="e.g. Resident Name" 
                         className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Contact Phone *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Phone / WhatsApp</label>
                       <input 
                         required 
                         type="tel" 
@@ -929,21 +972,14 @@ NearNest Community & Society Services Team`;
                     </div>
                   </div>
 
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-900/30 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
-                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
-                    <span>
-                      {bookingProvider.name} will receive this work order and arrive at your society flat to inspect and complete the work at the scheduled time.
-                    </span>
-                  </div>
-
                   <div className="pt-2">
                     <Button 
                       type="submit" 
                       disabled={isSubmittingBooking}
-                      className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm flex items-center justify-center gap-2"
+                      className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold shadow-md text-sm flex items-center justify-center gap-2 transition-all"
                     >
-                      {isSubmittingBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-                      <span>Confirm Booking & Prepare Gmail Order</span>
+                      {isSubmittingBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      <span>Send Hire Request</span>
                     </Button>
                   </div>
                 </form>
@@ -1056,9 +1092,10 @@ NearNest Community & Society Services Team`;
                         type="email" 
                         value={srvEmail}
                         onChange={(e) => setSrvEmail(e.target.value)}
-                        placeholder="provider@gmail.com" 
+                        placeholder="yourname@gmail.com" 
                         className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
                       />
+                      <p className="text-[10px] text-brand-600 mt-1 font-medium">When society members hire you, work requests will be delivered to this email.</p>
                     </div>
                   </div>
                   <div>

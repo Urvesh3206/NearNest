@@ -66,6 +66,27 @@
       "status": "PENDING",
       "submittedBy": "Aarav Sharma (Resident / Friend)",
       "createdAt": "2026-10-15T05:30:00.000Z"
+    },
+    {
+      "id": "srv_umesh_ac",
+      "name": "Umesh",
+      "category": "AC Repair",
+      "location": "Ajeenkya Residency & Society",
+      "distance": "0.3 km",
+      "verified": true,
+      "rating": 5.0,
+      "reviews": 18,
+      "rate": "₹350/hr",
+      "experience": "4 years",
+      "availableToday": true,
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Umesh&backgroundColor=b6e3f4",
+      "speciality": "AC master cleaning, gas charging, cooling coil repair & installation",
+      "phone": "+91 98234 56789",
+      "email": "umesh.acrepair@gmail.com",
+      "isCustom": true,
+      "status": "APPROVED",
+      "submittedBy": "Umesh (Service Provider)",
+      "createdAt": "2026-10-15T00:00:00.000Z"
     }
   ],
   "bookings": [
