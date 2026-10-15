@@ -12,6 +12,7 @@
       "rating": 5.0,
       "reviews": 14,
       "phone": "+91 9373571631",
+      "email": "urveshrane3206@gmail.com",
       "openNow": true,
       "coverPhoto": "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop",
       "logo": "https://api.dicebear.com/7.x/initials/svg?seed=Urvesh%20Mart&backgroundColor=059669",
@@ -39,6 +40,7 @@
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop",
       "speciality": "Smart home automation, Wi-Fi mesh setup, CCTV security & computer hardware diagnostics",
       "phone": "+91 9373571631",
+      "email": "urveshrane3206@gmail.com",
       "isCustom": true,
       "status": "APPROVED",
       "submittedBy": "Urvesh Rane (Admin)",
@@ -59,10 +61,33 @@
       "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav%20Sharma&backgroundColor=c0aede",
       "speciality": "Certified residential electrical wiring, switchboard upgrades & inverter battery installation",
       "phone": "+91 98220 11223",
+      "email": "aarav.sharma.electrician@gmail.com",
       "isCustom": true,
       "status": "PENDING",
       "submittedBy": "Aarav Sharma (Resident / Friend)",
       "createdAt": "2026-10-15T05:30:00.000Z"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "book_sample_1",
+      "providerId": "srv_user_1",
+      "providerName": "Urvesh Rane",
+      "providerCategory": "Tech & Smart Home Support",
+      "providerEmail": "urveshrane3206@gmail.com",
+      "providerPhone": "+91 9373571631",
+      "residentName": "Priya Deshmukh",
+      "residentEmail": "priya.deshmukh@gmail.com",
+      "residentPhone": "+91 98901 54321",
+      "societyName": "Ajeenkya Residency",
+      "unitAddress": "Flat 304, Tower C",
+      "serviceRequired": "Dual-band Wi-Fi router setup and 4K CCTV camera installation in living room",
+      "date": "2026-10-16",
+      "time": "11:00",
+      "rate": "₹500/hr",
+      "status": "CONFIRMED",
+      "notificationSent": true,
+      "createdAt": "2026-10-15T06:00:00.000Z"
     }
   ]
 }

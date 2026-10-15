@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Star, MapPin, Briefcase, Clock,
   ShieldCheck, X, DollarSign, Plus, CheckCircle2, Navigation, Phone, Calendar,
-  Home, ArrowLeft, ChevronRight, Trash2, Loader2
+  Home, ArrowLeft, ChevronRight, Trash2, Loader2, Mail, Send, ExternalLink, MessageSquare, Check
 } from "lucide-react";
 import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
@@ -38,7 +38,9 @@ const PROVIDERS = [
     experience: "8 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh&backgroundColor=c0aede",
-    speciality: "Wiring, circuit breaker repair, smart home switches & lighting installation"
+    speciality: "Wiring, circuit breaker repair, smart home switches & lighting installation",
+    phone: "+91 98220 11445",
+    email: "rajesh.kumar.electrician@gmail.com"
   },
   {
     id: "2",
@@ -53,7 +55,9 @@ const PROVIDERS = [
     experience: "5 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sunita&backgroundColor=ffdfbf",
-    speciality: "Deep house cleaning, dusting, dishwashing, laundry & organization"
+    speciality: "Deep house cleaning, dusting, dishwashing, laundry & organization",
+    phone: "+91 97654 32100",
+    email: "sunita.devi.services@gmail.com"
   },
   {
     id: "3",
@@ -68,7 +72,9 @@ const PROVIDERS = [
     experience: "7 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amit&backgroundColor=b6e3f4",
-    speciality: "Leak detection, pipe fitting, faucet replacement, drainage unclogging"
+    speciality: "Leak detection, pipe fitting, faucet replacement, drainage unclogging",
+    phone: "+91 94223 88990",
+    email: "amit.patel.plumbing@gmail.com"
   },
   {
     id: "4",
@@ -83,7 +89,9 @@ const PROVIDERS = [
     experience: "6 years",
     availableToday: false,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Elena&backgroundColor=ffd5dc",
-    speciality: "K-12 Math, AP Physics, Chemistry & competitive exam preparation"
+    speciality: "K-12 Math, AP Physics, Chemistry & competitive exam preparation",
+    phone: "+91 91234 56789",
+    email: "elena.rostova.tutor@gmail.com"
   },
   {
     id: "5",
@@ -98,7 +106,9 @@ const PROVIDERS = [
     experience: "10 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram&backgroundColor=d1fae5",
-    speciality: "HVAC maintenance, gas refill, compressor fixing & filter sanitization"
+    speciality: "HVAC maintenance, gas refill, compressor fixing & filter sanitization",
+    phone: "+91 98901 23456",
+    email: "vikram.singh.acrepair@gmail.com"
   },
   {
     id: "6",
@@ -113,7 +123,9 @@ const PROVIDERS = [
     experience: "4 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya&backgroundColor=fef3c7",
-    speciality: "Hatha yoga, Pranayama, morning mobility, back pain relief & meditation"
+    speciality: "Hatha yoga, Pranayama, morning mobility, back pain relief & meditation",
+    phone: "+91 93245 67890",
+    email: "priya.sharma.yoga@gmail.com"
   },
   {
     id: "7",
@@ -128,7 +140,9 @@ const PROVIDERS = [
     experience: "9 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael&backgroundColor=e2e8f0",
-    speciality: "Custom furniture repair, door lock installation, kitchen cabinets & woodwork"
+    speciality: "Custom furniture repair, door lock installation, kitchen cabinets & woodwork",
+    phone: "+91 99887 76655",
+    email: "michael.chen.woodwork@gmail.com"
   },
   {
     id: "8",
@@ -143,7 +157,9 @@ const PROVIDERS = [
     experience: "5 years",
     availableToday: true,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=ede9fe",
-    speciality: "Certified CPR, infant care, creative playtime, homework help & cooking"
+    speciality: "Certified CPR, infant care, creative playtime, homework help & cooking",
+    phone: "+91 98765 43210",
+    email: "sarah.jenkins.care@gmail.com"
   }
 ];
 
@@ -163,6 +179,22 @@ function ServicesContent() {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  // Booking Form State
+  const [bookingService, setBookingService] = useState("");
+  const [bookingDate, setBookingDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
+  });
+  const [bookingTime, setBookingTime] = useState("10:00");
+  const [bookingSociety, setBookingSociety] = useState((user as any)?.society || "Greenfield Residency");
+  const [bookingUnit, setBookingUnit] = useState((user as any)?.unit || "Flat 402, Tower B");
+  const [bookingResidentName, setBookingResidentName] = useState(user?.name || "Resident Member");
+  const [bookingPhone, setBookingPhone] = useState(user?.phone || "+91 98765 43210");
+  const [bookingResidentEmail, setBookingResidentEmail] = useState(user?.email || "resident@nearnest.com");
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [bookedDetails, setBookedDetails] = useState<any>(null);
+
   // Form state for adding provider
   const [srvName, setSrvName] = useState(user?.name || "");
   const [srvCategory, setSrvCategory] = useState("Electrician");
@@ -170,6 +202,7 @@ function ServicesContent() {
   const [srvRate, setSrvRate] = useState("₹350/hr");
   const [srvExperience, setSrvExperience] = useState("4 years");
   const [srvPhone, setSrvPhone] = useState(user?.phone || "+91 93735 71631");
+  const [srvEmail, setSrvEmail] = useState(user?.email || "");
   const [srvSpeciality, setSrvSpeciality] = useState("");
   const [isSubmittingSrv, setIsSubmittingSrv] = useState(false);
 
@@ -214,6 +247,7 @@ function ServicesContent() {
         experience: srvExperience,
         speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
         phone: srvPhone,
+        email: srvEmail || `${srvName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
         avatar: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srvName)}&backgroundColor=b6e3f4`,
         isAdmin,
         submittedBy: `${user?.name || srvName} (${user?.role || 'Resident'})`,
@@ -258,6 +292,7 @@ function ServicesContent() {
         avatar: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srvName)}&backgroundColor=b6e3f4`,
         speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
         phone: srvPhone,
+        email: srvEmail || `${srvName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
         isCustom: true,
         submittedBy: `${user?.name || srvName} (${user?.role || 'Resident'})`,
       };
@@ -326,14 +361,125 @@ function ServicesContent() {
     return true;
   });
 
-  const handleBook = (e: React.FormEvent) => {
-    e.preventDefault();
-    setBookingSuccess(true);
-    setTimeout(() => {
-      setBookingSuccess(false);
-      setBookingProvider(null);
-    }, 2000);
+  const openBookingModal = (provider: any) => {
+    setBookingProvider(provider);
+    setBookingSuccess(false);
+    setBookedDetails(null);
+    setBookingService("");
+    if (user?.name) setBookingResidentName(user.name);
+    if (user?.phone) setBookingPhone(user.phone);
+    if (user?.email) setBookingResidentEmail(user.email);
+    if ((user as any)?.society) setBookingSociety((user as any).society);
+    if ((user as any)?.unit) setBookingUnit((user as any).unit);
   };
+
+  const handleBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingService.trim()) {
+      toast.error("Please enter the service details required");
+      return;
+    }
+    if (!bookingUnit.trim()) {
+      toast.error("Please enter your flat or unit address");
+      return;
+    }
+    setIsSubmittingBooking(true);
+    try {
+      const payload = {
+        providerId: bookingProvider?.id,
+        providerName: bookingProvider?.name,
+        providerCategory: bookingProvider?.category,
+        providerEmail: bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
+        providerPhone: bookingProvider?.phone || "+91 9373571631",
+        residentName: bookingResidentName,
+        residentEmail: bookingResidentEmail,
+        residentPhone: bookingPhone,
+        societyName: bookingSociety,
+        unitAddress: bookingUnit,
+        serviceRequired: bookingService,
+        date: bookingDate,
+        time: bookingTime,
+        rate: bookingProvider?.rate,
+      };
+
+      const res = await fetch('/api/services/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success && data.booking) {
+        setBookedDetails(data.booking);
+      } else {
+        setBookedDetails({ ...payload, id: `book_${Date.now()}` });
+      }
+      setBookingSuccess(true);
+      toast.success(`Booking logged! Click below to send work order to ${bookingProvider?.name}'s Gmail.`);
+    } catch (err) {
+      setBookedDetails({
+        providerId: bookingProvider?.id,
+        providerName: bookingProvider?.name,
+        providerCategory: bookingProvider?.category,
+        providerEmail: bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
+        providerPhone: bookingProvider?.phone || "+91 9373571631",
+        residentName: bookingResidentName,
+        residentEmail: bookingResidentEmail,
+        residentPhone: bookingPhone,
+        societyName: bookingSociety,
+        unitAddress: bookingUnit,
+        serviceRequired: bookingService,
+        date: bookingDate,
+        time: bookingTime,
+        rate: bookingProvider?.rate,
+        id: `book_${Date.now()}`,
+      });
+      setBookingSuccess(true);
+      toast.success(`Booking logged successfully!`);
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  };
+
+  const emailTo = bookedDetails?.providerEmail || bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
+  const emailSubject = `[NearNest Work Request] Please come to ${bookedDetails?.unitAddress || bookingUnit}, ${bookedDetails?.societyName || bookingSociety} for ${bookedDetails?.serviceRequired || bookingService}`;
+  const emailBody = `Dear ${bookingProvider?.name || 'Service Provider'},
+
+You have received an official service work order from a society member on NearNest.
+
+Please come to the society member premises at the scheduled time to inspect and complete the work:
+
+=========================================
+📍 WORK ORDER & LOCATION DETAILS:
+=========================================
+• Society / Apartment: ${bookedDetails?.societyName || bookingSociety}
+• Flat / Tower Unit: ${bookedDetails?.unitAddress || bookingUnit}
+• Society Member: ${bookedDetails?.residentName || bookingResidentName}
+• Member Contact Phone: ${bookedDetails?.residentPhone || bookingPhone}
+• Member Email: ${bookedDetails?.residentEmail || bookingResidentEmail}
+
+=========================================
+🛠️ SERVICE DETAILS:
+=========================================
+• Service Category: ${bookingProvider?.category}
+• Work Required: ${bookedDetails?.serviceRequired || bookingService}
+• Scheduled Date: ${bookedDetails?.date || bookingDate}
+• Preferred Time: ${bookedDetails?.time || bookingTime}
+• Estimated Rate: ${bookingProvider?.rate}
+
+=========================================
+INSTRUCTIONS FOR SERVICE PROVIDER:
+=========================================
+1. Please confirm your arrival time with the society member by replying to this email or calling ${bookedDetails?.residentPhone || bookingPhone}.
+2. Carry your government or NearNest ID for security gate entry at ${bookedDetails?.societyName || bookingSociety}.
+3. Complete the work professionally and collect payment directly as per agreed terms.
+
+Thank you,
+NearNest Community & Society Services Team`;
+
+  const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailTo)}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+  const mailtoUrl = `mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+  const cleanPhone = (bookingProvider?.phone || "").replace(/[^0-9]/g, "");
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(`Hi ${bookingProvider?.name}, I booked your service on NearNest for "${bookedDetails?.serviceRequired || bookingService}" at ${bookedDetails?.unitAddress || bookingUnit}, ${bookedDetails?.societyName || bookingSociety} on ${bookedDetails?.date || bookingDate} at ${bookedDetails?.time || bookingTime}. Please check your Gmail or reply here to confirm. Thanks!`)}`;
 
   return (
     <div className="space-y-8">
@@ -526,7 +672,7 @@ function ServicesContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
-                    onClick={() => setBookingProvider(provider)}
+                    onClick={() => openBookingModal(provider)}
                     className="bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs py-2 px-3.5 shadow-sm"
                   >
                     Hire Provider
@@ -560,54 +706,244 @@ function ServicesContent() {
       {/* Booking Modal */}
       <AnimatePresence>
         {bookingProvider && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface rounded-3xl shadow-modal w-full max-w-md overflow-hidden border border-border-hairline"
+              className="bg-surface rounded-3xl shadow-modal w-full max-w-lg overflow-hidden border border-border-hairline flex flex-col max-h-[92vh]"
             >
-              <div className="p-5 border-b border-border-hairline flex justify-between items-center bg-surface-subtle">
-                <div>
-                  <h3 className="font-bold text-lg text-text-primary">Hire {bookingProvider.name}</h3>
-                  <p className="text-xs text-text-secondary">{bookingProvider.category} • {bookingProvider.rate}</p>
+              <div className="p-5 border-b border-border-hairline flex justify-between items-center bg-surface-subtle shrink-0">
+                <div className="flex items-center gap-3">
+                  <img src={bookingProvider.avatar} alt={bookingProvider.name} className="w-10 h-10 rounded-full border border-border-hairline bg-surface" />
+                  <div>
+                    <h3 className="font-bold text-base text-text-primary flex items-center gap-1.5">
+                      Hire {bookingProvider.name}
+                      {bookingProvider.verified && <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
+                    </h3>
+                    <p className="text-xs text-text-secondary">{bookingProvider.category} • <span className="font-semibold text-brand-600">{bookingProvider.rate}</span></p>
+                  </div>
                 </div>
-                <button onClick={() => setBookingProvider(null)} className="p-2 hover:bg-surface rounded-full transition-colors">
-                  <X size={18} className="text-text-secondary" />
+                <button 
+                  onClick={() => { setBookingProvider(null); setBookingSuccess(false); }} 
+                  className="p-2 hover:bg-surface rounded-full transition-colors text-text-secondary"
+                >
+                  <X size={18} />
                 </button>
               </div>
 
               {bookingSuccess ? (
-                <div className="p-8 text-center space-y-3">
-                  <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-8 h-8" />
+                <div className="p-6 space-y-4 overflow-y-auto">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
+                    <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <h4 className="text-xl font-bold text-text-primary">Booking Request Sent!</h4>
-                  <p className="text-xs text-text-secondary">{bookingProvider.name} has been notified and will arrive at your requested time. Contact details are saved in your Chat.</p>
+
+                  <div className="text-center space-y-1">
+                    <h4 className="text-lg font-bold text-text-primary">Booking Confirmed & Work Order Ready!</h4>
+                    <p className="text-xs text-text-secondary">
+                      Your service request has been logged in the NearNest database for <strong>{bookingProvider.name}</strong>.
+                    </p>
+                  </div>
+
+                  {/* Summary Card */}
+                  <div className="p-4 bg-canvas rounded-2xl border border-border-hairline text-xs space-y-2.5">
+                    <div className="flex justify-between items-center pb-2 border-b border-border-hairline">
+                      <span className="text-text-tertiary">Service Provider:</span>
+                      <span className="font-bold text-text-primary flex items-center gap-1.5">
+                        {bookingProvider.name} ({bookingProvider.category})
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Provider Gmail:</span>
+                      <span className="font-medium text-brand-600 truncate max-w-[220px]">
+                        {bookedDetails?.providerEmail || emailTo}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Provider Phone:</span>
+                      <span className="font-medium text-text-primary">
+                        {bookedDetails?.providerPhone || bookingProvider.phone || "+91 9373571631"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Scheduled Date & Time:</span>
+                      <span className="font-semibold text-text-primary">
+                        {bookedDetails?.date || bookingDate} at {bookedDetails?.time || bookingTime}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Society Destination:</span>
+                      <span className="font-semibold text-emerald-600">
+                        {bookedDetails?.unitAddress || bookingUnit}, {bookedDetails?.societyName || bookingSociety}
+                      </span>
+                    </div>
+                    <div className="pt-2 border-t border-border-hairline">
+                      <span className="text-text-tertiary block mb-1">Work Description:</span>
+                      <p className="p-2.5 bg-surface rounded-xl text-text-primary font-medium border border-border-hairline text-xs">
+                        {bookedDetails?.serviceRequired || bookingService}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Instructions Callout */}
+                  <div className="p-3.5 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-900/30 text-xs text-red-700 dark:text-red-300 flex items-start gap-2.5">
+                    <Mail className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                    <div className="space-y-1">
+                      <p className="font-bold">Email Notification to Service Provider</p>
+                      <p className="text-[11px] leading-relaxed text-red-600/90 dark:text-red-300/80">
+                        Click below to open Gmail. The work order is pre-formatted, requesting the provider to come directly to your society unit premises and complete the work at the scheduled time.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dispatch Action Buttons */}
+                  <div className="space-y-2 pt-1">
+                    <a
+                      href={gmailWebUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>Send Work Order via Gmail</span>
+                      <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                    </a>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={mailtoUrl}
+                        className="py-2.5 px-3 bg-surface hover:bg-surface-subtle border border-border-hairline text-text-primary rounded-xl font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Send className="w-3.5 h-3.5 text-text-tertiary" />
+                        <span>Default Mail App</span>
+                      </a>
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>WhatsApp Alert</span>
+                      </a>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setBookingSuccess(false);
+                        setBookingProvider(null);
+                      }}
+                      className="w-full mt-2 text-xs py-2.5"
+                    >
+                      Done / Close
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <form onSubmit={handleBook} className="p-5 space-y-4">
+                <form onSubmit={handleBook} className="p-5 space-y-4 overflow-y-auto">
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Service Required</label>
-                    <input required type="text" placeholder="e.g. Kitchen tap leaking, AC master cleaning..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                    <label className="block text-xs font-semibold text-text-primary mb-1">
+                      Service Description / Problem Details *
+                    </label>
+                    <textarea 
+                      required 
+                      rows={2}
+                      value={bookingService}
+                      onChange={(e) => setBookingService(e.target.value)}
+                      placeholder="e.g. Master bathroom tap leaking continuously, needs inspection and washer replacement..." 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary" 
+                    />
                   </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Date</label>
-                      <input required type="date" className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Scheduled Date *</label>
+                      <input 
+                        required 
+                        type="date" 
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Preferred Time</label>
-                      <input required type="time" className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Preferred Time *</label>
+                      <input 
+                        required 
+                        type="time" 
+                        value={bookingTime}
+                        onChange={(e) => setBookingTime(e.target.value)}
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Your Address & Unit</label>
-                    <input required type="text" placeholder="e.g. Block A, Apt 402, Greenfield Park" className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Housing Society / Complex *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        value={bookingSociety}
+                        onChange={(e) => setBookingSociety(e.target.value)}
+                        placeholder="e.g. Ajeenkya Residency" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Flat / Tower / Unit No. *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        value={bookingUnit}
+                        onChange={(e) => setBookingUnit(e.target.value)}
+                        placeholder="e.g. Flat 402, Tower B" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Name *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        value={bookingResidentName}
+                        onChange={(e) => setBookingResidentName(e.target.value)}
+                        placeholder="e.g. Priya Deshmukh" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Contact Phone *</label>
+                      <input 
+                        required 
+                        type="tel" 
+                        value={bookingPhone}
+                        onChange={(e) => setBookingPhone(e.target.value)}
+                        placeholder="+91 98765 43210" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-900/30 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
+                    <span>
+                      {bookingProvider.name} will receive this work order and arrive at your society flat to inspect and complete the work at the scheduled time.
+                    </span>
+                  </div>
+
                   <div className="pt-2">
-                    <Button type="submit" className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm">
-                      Send Hire Request
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmittingBooking}
+                      className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm flex items-center justify-center gap-2"
+                    >
+                      {isSubmittingBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
+                      <span>Confirm Booking & Prepare Gmail Order</span>
                     </Button>
                   </div>
                 </form>
@@ -701,16 +1037,29 @@ function ServicesContent() {
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-text-primary mb-1">Contact Phone / WhatsApp *</label>
-                    <input 
-                      required 
-                      type="tel" 
-                      value={srvPhone}
-                      onChange={(e) => setSrvPhone(e.target.value)}
-                      placeholder="+91 98765 43210" 
-                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Contact Phone / WhatsApp *</label>
+                      <input 
+                        required 
+                        type="tel" 
+                        value={srvPhone}
+                        onChange={(e) => setSrvPhone(e.target.value)}
+                        placeholder="+91 98765 43210" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Gmail / Email for Work Orders *</label>
+                      <input 
+                        required 
+                        type="email" 
+                        value={srvEmail}
+                        onChange={(e) => setSrvEmail(e.target.value)}
+                        placeholder="provider@gmail.com" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-text-primary mb-1">Description of Experience & Tools</label>

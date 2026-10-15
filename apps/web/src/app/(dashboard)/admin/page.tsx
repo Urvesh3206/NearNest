@@ -17,6 +17,23 @@ export default function AdminDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [searchFilter, setSearchFilter] = useState('');
   const [counts, setCounts] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+
+  const fetchBookings = async () => {
+    setLoadingBookings(true);
+    try {
+      const res = await fetch('/api/services/book');
+      const data = await res.json();
+      if (data.success) {
+        setBookings(data.bookings || []);
+      }
+    } catch (e) {
+      console.error('Error fetching bookings:', e);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
 
   const fetchRequests = async () => {
     setLoadingRequests(true);
@@ -36,6 +53,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchRequests();
+    fetchBookings();
   }, []);
 
   const handleAction = async (type: 'business' | 'service', id: string, action: 'APPROVE' | 'REJECT', name: string) => {
@@ -148,6 +166,7 @@ export default function AdminDashboardPage() {
         <Tabs
           tabs={[
             { id: 'verifications', label: `Verification Requests (${counts.pending} pending)` },
+            { id: 'bookings', label: `Service Bookings (${bookings.length})` },
             { id: 'complaints', label: 'Complaints Manager' },
             { id: 'broadcast', label: 'Broadcast Announcement' },
             { id: 'financials', label: 'Financials & Dues' },
@@ -462,6 +481,93 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {activeTab === 'bookings' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <div>
+                  <h3 className="font-semibold text-text-primary">Service Provider Work Orders</h3>
+                  <p className="text-xs text-text-secondary">Society member hire requests, premises visit instructions & work orders</p>
+                </div>
+                <Button variant="outline" onClick={fetchBookings} className="text-xs">
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loadingBookings ? 'animate-spin' : ''}`} />
+                  Refresh Bookings
+                </Button>
+              </div>
+
+              {loadingBookings && (
+                <div className="py-12 text-center text-text-secondary">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-500" />
+                  <p className="text-xs">Loading bookings from database...</p>
+                </div>
+              )}
+
+              {!loadingBookings && bookings.length === 0 && (
+                <div className="py-12 text-center bg-surface-subtle/50 rounded-xl p-6">
+                  <CheckCircle className="w-10 h-10 text-brand-500 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-text-primary">No Service Bookings Yet</p>
+                  <p className="text-xs text-text-secondary mt-1">When residents hire service providers on the Services page, work orders will appear here.</p>
+                </div>
+              )}
+
+              {!loadingBookings && bookings.map((b) => (
+                <div key={b.id} className="p-4 bg-surface rounded-2xl border border-border-hairline shadow-sm hover:shadow-card transition-shadow">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border-hairline">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-brand-500/10 text-brand-600 flex items-center justify-center font-bold text-sm">
+                        {b.providerName ? b.providerName.slice(0, 2).toUpperCase() : 'SP'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-text-primary">{b.providerName}</h4>
+                          <span className="px-2 py-0.5 bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 text-[10px] font-semibold rounded-md border border-brand-200 dark:border-brand-800">
+                            {b.providerCategory}
+                          </span>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                            {b.status || 'CONFIRMED'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-text-secondary flex items-center gap-2 mt-0.5">
+                          <span>📧 {b.providerEmail}</span>
+                          <span>•</span>
+                          <span>📞 {b.providerPhone}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs font-semibold text-text-primary block">
+                        📅 {b.date} at {b.time}
+                      </span>
+                      <span className="text-[11px] text-text-tertiary">
+                        Rate: {b.rate}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 text-xs">
+                    <div className="p-3 bg-surface-subtle rounded-xl space-y-1">
+                      <span className="text-text-tertiary block font-semibold text-[11px]">SOCIETY DESTINATION:</span>
+                      <p className="font-semibold text-text-primary flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                        {b.unitAddress}, {b.societyName}
+                      </p>
+                      <p className="text-text-secondary text-[11px]">
+                        Resident Member: <strong>{b.residentName}</strong> ({b.residentPhone})
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-surface-subtle rounded-xl space-y-1">
+                      <span className="text-text-tertiary block font-semibold text-[11px]">SERVICE REQUIRED:</span>
+                      <p className="text-text-primary font-medium leading-relaxed">
+                        {b.serviceRequired}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

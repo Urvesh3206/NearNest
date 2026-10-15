@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, category, location, rate, experience, speciality, phone, avatar, isAdmin, submittedBy } = body;
+    const { name, category, location, rate, experience, speciality, phone, email, avatar, isAdmin, submittedBy } = body;
 
     if (!name || !category) {
       return NextResponse.json(
@@ -80,6 +80,7 @@ export async function POST(req: Request) {
       speciality:
         speciality?.trim() || `Professional ${category} services with guaranteed neighborhood satisfaction`,
       phone: phone?.trim() || '+91 9373571631',
+      email: email?.trim() || `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
       isCustom: true,
       submittedBy: submittedBy || name || 'Community Member',
       createdAt: new Date().toISOString(),
