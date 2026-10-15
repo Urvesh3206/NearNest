@@ -6,10 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Star, MapPin, Briefcase, Clock,
   ShieldCheck, X, DollarSign, Plus, CheckCircle2, Navigation, Phone, Calendar,
-  Home, ArrowLeft, ChevronRight
+  Home, ArrowLeft, ChevronRight, Trash2, Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
+import { useAuth } from "@/providers/AuthProvider";
+import toast from "react-hot-toast";
 
 const CATEGORIES = ["All", "Electrician", "Plumber", "Maid", "Cook", "Tutor", "AC Repair", "Carpenter", "Painter", "Yoga Trainer", "Babysitter", "RO Repair", "Driver", "Mechanic"];
 
@@ -152,13 +154,121 @@ function ServicesContent() {
   const initialSearch = searchParams.get("search") || "";
   const initialCategory = searchParams.get("category") || "All";
 
-
+  const { user } = useAuth();
+  const [customServices, setCustomServices] = useState<any[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(initialLocation);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [bookingProvider, setBookingProvider] = useState<any>(null);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  // Form state for adding provider
+  const [srvName, setSrvName] = useState(user?.name || "");
+  const [srvCategory, setSrvCategory] = useState("Electrician");
+  const [srvNeighborhood, setSrvNeighborhood] = useState("Greenfield Park");
+  const [srvRate, setSrvRate] = useState("₹350/hr");
+  const [srvExperience, setSrvExperience] = useState("4 years");
+  const [srvPhone, setSrvPhone] = useState(user?.phone || "+91 93735 71631");
+  const [srvSpeciality, setSrvSpeciality] = useState("");
+  const [isSubmittingSrv, setIsSubmittingSrv] = useState(false);
+
+  // Load custom services from database on mount
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        const res = await fetch('/api/services');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.services) && data.services.length > 0) {
+          setCustomServices(data.services);
+          localStorage.setItem('nearnest_custom_services', JSON.stringify(data.services));
+          return;
+        }
+      } catch (err) {
+        console.warn('Error fetching services from API:', err);
+      }
+      try {
+        const stored = localStorage.getItem('nearnest_custom_services');
+        if (stored) {
+          setCustomServices(JSON.parse(stored));
+        }
+      } catch (e) {}
+    }
+    loadServices();
+  }, []);
+
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!srvName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    setIsSubmittingSrv(true);
+    try {
+      const payload = {
+        name: srvName,
+        category: srvCategory,
+        location: srvNeighborhood,
+        rate: srvRate,
+        experience: srvExperience,
+        speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
+        phone: srvPhone,
+        avatar: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srvName)}&backgroundColor=b6e3f4`,
+      };
+
+      const res = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.success && result.service) {
+        const updated = [result.service, ...customServices.filter(s => s.id !== result.service.id)];
+        setCustomServices(updated);
+        localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
+        toast.success(`Service Provider "${result.service.name}" added to database! 🎉`);
+      } else {
+        throw new Error(result.error || "Save failed");
+      }
+    } catch (err) {
+      const fallbackSrv = {
+        id: `srv_custom_${Date.now()}`,
+        name: srvName,
+        category: srvCategory,
+        location: srvNeighborhood,
+        distance: "0.2 km",
+        verified: true,
+        rating: 5.0,
+        reviews: 1,
+        rate: srvRate,
+        experience: srvExperience,
+        availableToday: true,
+        avatar: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srvName)}&backgroundColor=b6e3f4`,
+        speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
+        phone: srvPhone,
+        isCustom: true,
+      };
+      const updated = [fallbackSrv, ...customServices];
+      setCustomServices(updated);
+      localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
+      toast.success(`"${fallbackSrv.name}" registered and saved locally! 🎉`);
+    } finally {
+      setIsSubmittingSrv(false);
+      setIsJoinModalOpen(false);
+      setSrvSpeciality("");
+    }
+  };
+
+  const handleDeleteService = async (srvId: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to remove "${name}" from the service directory?`)) return;
+    try {
+      await fetch(`/api/services?id=${srvId}`, { method: 'DELETE' });
+    } catch (e) {}
+    const updated = customServices.filter(s => s.id !== srvId);
+    setCustomServices(updated);
+    localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
+    toast.success(`"${name}" removed from database`);
+  };
 
   useEffect(() => {
     if (initialLocation && initialLocation !== "All Locations") {
@@ -172,7 +282,9 @@ function ServicesContent() {
     }
   }, [initialLocation, initialSearch, initialCategory]);
 
-  const filteredProviders = PROVIDERS.filter(p => {
+  const allProviders = [...customServices, ...PROVIDERS];
+
+  const filteredProviders = allProviders.filter(p => {
     if (selectedNeighborhood !== "All Locations" && !p.location.toLowerCase().includes(selectedNeighborhood.toLowerCase())) {
       return false;
     }
@@ -332,11 +444,16 @@ function ServicesContent() {
                   <div className="flex items-center gap-3">
                     <img src={provider.avatar} alt={provider.name} className="w-12 h-12 rounded-full border border-border-hairline bg-surface-subtle" />
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-bold text-base text-text-primary">{provider.name}</h3>
                         {provider.verified && (
                           <span title="ID Verified Provider">
                             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                          </span>
+                        )}
+                        {(provider as any).isCustom && (
+                          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded">
+                            ⭐ My Profile
                           </span>
                         )}
                       </div>
@@ -378,12 +495,23 @@ function ServicesContent() {
                   <span>{provider.rating}</span>
                   <span className="text-text-tertiary font-normal">({provider.reviews})</span>
                 </div>
-                <Button 
-                  onClick={() => setBookingProvider(provider)}
-                  className="bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs py-2 px-4 shadow-sm"
-                >
-                  Hire Provider
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => setBookingProvider(provider)}
+                    className="bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs py-2 px-3.5 shadow-sm"
+                  >
+                    Hire Provider
+                  </Button>
+                  {(provider as any).isCustom && (
+                    <button
+                      onClick={() => handleDeleteService(provider.id, provider.name)}
+                      className="p-2 bg-coral-50 hover:bg-coral-100 text-coral-600 rounded-xl transition-colors border border-coral-200"
+                      title="Remove from Database"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -480,23 +608,40 @@ function ServicesContent() {
                 </button>
               </div>
               <div className="overflow-y-auto p-5">
-                <form id="provider-form" onSubmit={(e) => { e.preventDefault(); alert('Application submitted! Our verification team will contact you to verify your ID badge.'); setIsJoinModalOpen(false); }} className="space-y-4">
+                <form id="provider-form" onSubmit={handleAddService} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Full Name</label>
-                    <input required type="text" placeholder="e.g. Rajesh Kumar" className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Full Name *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={srvName}
+                      onChange={(e) => setSrvName(e.target.value)}
+                      placeholder="e.g. Rajesh Kumar" 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Service Skill</label>
-                      <select required className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary">
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Service Skill *</label>
+                      <select 
+                        required 
+                        value={srvCategory}
+                        onChange={(e) => setSrvCategory(e.target.value)}
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary"
+                      >
                         {CATEGORIES.filter(c => c !== "All").map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Primary Neighborhood</label>
-                      <select required className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary">
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Primary Neighborhood</label>
+                      <select 
+                        required 
+                        value={srvNeighborhood}
+                        onChange={(e) => setSrvNeighborhood(e.target.value)}
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary"
+                      >
                         {NEIGHBORHOODS.filter(n => n !== "All Locations").map(n => (
                           <option key={n} value={n}>{n}</option>
                         ))}
@@ -505,27 +650,60 @@ function ServicesContent() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Hourly / Visit Rate</label>
-                      <input required type="text" placeholder="e.g. $35/hr" className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Hourly / Visit Rate *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        value={srvRate}
+                        onChange={(e) => setSrvRate(e.target.value)}
+                        placeholder="e.g. ₹350/hr" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Years Experience</label>
-                      <input required type="text" placeholder="e.g. 5 years" className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Years Experience</label>
+                      <input 
+                        required 
+                        type="text" 
+                        value={srvExperience}
+                        onChange={(e) => setSrvExperience(e.target.value)}
+                        placeholder="e.g. 5 years" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Phone Number</label>
-                    <input required type="tel" placeholder="+1 (555)..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Contact Phone / WhatsApp *</label>
+                    <input 
+                      required 
+                      type="tel" 
+                      value={srvPhone}
+                      onChange={(e) => setSrvPhone(e.target.value)}
+                      placeholder="+91 98765 43210" 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Description of Experience & Tools</label>
-                    <textarea required rows={2} placeholder="Describe your background..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary"></textarea>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Description of Experience & Tools</label>
+                    <textarea 
+                      rows={2} 
+                      value={srvSpeciality}
+                      onChange={(e) => setSrvSpeciality(e.target.value)}
+                      placeholder="Describe your background, specialty services, emergency call-outs..." 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary"
+                    />
                   </div>
                 </form>
               </div>
               <div className="p-5 border-t border-border-hairline bg-surface-subtle shrink-0">
-                <Button type="submit" form="provider-form" className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm">
-                  Submit Verification
+                <Button 
+                  type="submit" 
+                  form="provider-form" 
+                  disabled={isSubmittingSrv}
+                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmittingSrv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={16} />}
+                  <span>Save Provider to Database</span>
                 </Button>
               </div>
             </motion.div>

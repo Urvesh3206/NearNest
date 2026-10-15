@@ -7,11 +7,13 @@ import {
   Search, Star, MapPin, Phone, Clock, Plus,
   Calendar, CheckCircle2, X, Store, Wrench, Navigation, Filter,
   ShieldCheck, ArrowRight, ArrowLeft, Home, ChevronRight, Sparkles, Map as MapIcon, List, Loader2,
-  Compass, ExternalLink, BedDouble, Wifi, UtensilsCrossed, Car, Users
+  Compass, ExternalLink, BedDouble, Wifi, UtensilsCrossed, Car, Users, Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
 import { LocationMap } from "@/components/ui/LocationMap";
+import { useAuth } from "@/providers/AuthProvider";
+import toast from "react-hot-toast";
 import { 
   getBrowserLiveCoordinates, 
   reverseGeocode, 
@@ -53,11 +55,24 @@ function BusinessesContent() {
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
   const [maxRadiusKm, setMaxRadiusKm] = useState<number>(5);
 
+  const { user } = useAuth();
+
   // Live Real Hotels & Stores state
   const [hotels, setHotels] = useState<LiveHotel[]>([]);
   const [stores, setStores] = useState<LiveBusiness[]>([]);
+  const [customBusinesses, setCustomBusinesses] = useState<any[]>([]);
   const [isLoadingHotels, setIsLoadingHotels] = useState<boolean>(false);
   const [isLoadingStores, setIsLoadingStores] = useState<boolean>(false);
+
+  // Custom Business Registration Form State
+  const [bizName, setBizName] = useState("");
+  const [bizCategory, setBizCategory] = useState("Retail / Grocery");
+  const [bizArea, setBizArea] = useState("");
+  const [bizAddress, setBizAddress] = useState("");
+  const [bizPhone, setBizPhone] = useState("");
+  const [bizTagline, setBizTagline] = useState("");
+  const [bizCover, setBizCover] = useState("");
+  const [isSubmittingBiz, setIsSubmittingBiz] = useState(false);
 
   // Modals
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -65,6 +80,111 @@ function BusinessesContent() {
   const [hiringService, setHiringService] = useState<LiveService | null>(null);
   const [bookingHotel, setBookingHotel] = useState<LiveHotel | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  // Load custom businesses from database on mount
+  useEffect(() => {
+    async function loadBusinesses() {
+      try {
+        const res = await fetch('/api/businesses');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.businesses) && data.businesses.length > 0) {
+          setCustomBusinesses(data.businesses);
+          localStorage.setItem('nearnest_custom_businesses', JSON.stringify(data.businesses));
+          return;
+        }
+      } catch (err) {
+        console.warn('Error fetching businesses from API:', err);
+      }
+      // Fallback to local storage if API is not accessible
+      try {
+        const stored = localStorage.getItem('nearnest_custom_businesses');
+        if (stored) {
+          setCustomBusinesses(JSON.parse(stored));
+        }
+      } catch (e) {}
+    }
+    loadBusinesses();
+  }, []);
+
+  const handleAddBusiness = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bizName.trim()) {
+      toast.error("Please enter a business name");
+      return;
+    }
+    setIsSubmittingBiz(true);
+    try {
+      const payload = {
+        name: bizName,
+        category: bizCategory,
+        address: bizAddress ? `${bizAddress}, ${bizArea || activeLocationName}` : `${bizArea || activeLocationName}`,
+        phone: bizPhone || user?.phone || "+91 9373571631",
+        tagline: bizTagline || `Verified neighborhood ${bizCategory} serving ${activeLocationName}`,
+        coverPhoto: bizCover || "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop",
+        owner: user?.name || "Urvesh Rane",
+        lat: currentCoords.lat,
+        lng: currentCoords.lng,
+      };
+
+      const res = await fetch('/api/businesses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.success && result.business) {
+        const updated = [result.business, ...customBusinesses.filter(b => b.id !== result.business.id)];
+        setCustomBusinesses(updated);
+        localStorage.setItem('nearnest_custom_businesses', JSON.stringify(updated));
+        toast.success(`"${result.business.name}" added to database! 🎉`);
+      } else {
+        throw new Error(result.error || "Save failed");
+      }
+    } catch (err) {
+      const fallbackBiz = {
+        id: `biz_custom_${Date.now()}`,
+        name: bizName,
+        category: bizCategory,
+        lat: currentCoords.lat,
+        lng: currentCoords.lng,
+        distanceKm: 0.2,
+        distance: "0.2 km",
+        address: bizAddress ? `${bizAddress}, ${bizArea || activeLocationName}` : `${bizArea || activeLocationName}`,
+        rating: 5.0,
+        reviews: 1,
+        phone: bizPhone || user?.phone || "+91 9373571631",
+        openNow: true,
+        coverPhoto: bizCover || "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop",
+        logo: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(bizName)}&backgroundColor=059669`,
+        tagline: bizTagline || `Verified neighborhood ${bizCategory} serving ${activeLocationName}`,
+        owner: user?.name || "Urvesh Rane",
+        isCustom: true,
+      };
+      const updated = [fallbackBiz, ...customBusinesses];
+      setCustomBusinesses(updated);
+      localStorage.setItem('nearnest_custom_businesses', JSON.stringify(updated));
+      toast.success(`"${fallbackBiz.name}" added to local database! 🎉`);
+    } finally {
+      setIsSubmittingBiz(false);
+      setIsRegisterModalOpen(false);
+      setBizName("");
+      setBizAddress("");
+      setBizPhone("");
+      setBizTagline("");
+      setBizCover("");
+    }
+  };
+
+  const handleDeleteBusiness = async (bizId: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to remove "${name}" from the database?`)) return;
+    try {
+      await fetch(`/api/businesses?id=${bizId}`, { method: 'DELETE' });
+    } catch (e) {}
+    const updated = customBusinesses.filter(b => b.id !== bizId);
+    setCustomBusinesses(updated);
+    localStorage.setItem('nearnest_custom_businesses', JSON.stringify(updated));
+    toast.success(`"${name}" removed from database`);
+  };
 
   // Auto-detect real device location on mount if no explicit location parameter
   useEffect(() => {
@@ -78,8 +198,8 @@ function BusinessesContent() {
           const locName = geoInfo?.formattedName || `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`;
           setActiveLocationName(locName);
           setLocationInput(locName);
+          setBizArea(locName);
           setIsLocating(false);
-
         })
         .catch((err) => {
           console.log("GPS auto-detection skipped:", err);
@@ -95,7 +215,8 @@ function BusinessesContent() {
     activeLocationName
   );
 
-  const allBusinesses = stores.length > 0 ? stores : dynamicBusinesses;
+  const baseBusinesses = stores.length > 0 ? stores : dynamicBusinesses;
+  const allBusinesses = [...customBusinesses, ...baseBusinesses];
 
   // Fetch real OpenStreetMap live hotels and stores whenever coordinates change
   useEffect(() => {
@@ -850,7 +971,12 @@ function BusinessesContent() {
                   <div>
                     <div className="h-36 relative overflow-hidden bg-surface-subtle">
                       <img src={business.coverPhoto} alt={business.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+                      <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
+                        {(business as any).isCustom && (
+                          <span className="px-2 py-0.5 bg-brand-600 text-white font-bold text-[10px] rounded-md shadow-sm">
+                            ⭐ My Business
+                          </span>
+                        )}
                         <span className="px-2 py-0.5 bg-surface/90 backdrop-blur text-[11px] font-semibold rounded-md shadow-sm text-text-primary">
                           {business.category}
                         </span>
@@ -893,6 +1019,15 @@ function BusinessesContent() {
                     >
                       Book Visit
                     </button>
+                    {(business as any).isCustom && (
+                      <button
+                        onClick={() => handleDeleteBusiness(business.id, business.name)}
+                        className="p-1.5 bg-coral-50 hover:bg-coral-100 text-coral-600 rounded-xl transition-colors border border-coral-200"
+                        title="Delete from Database"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -1110,52 +1245,111 @@ function BusinessesContent() {
             >
               <div className="p-5 border-b border-border-hairline flex justify-between items-center bg-surface-subtle shrink-0">
                 <div>
-                  <h3 className="font-bold text-lg text-text-primary">Add Hotel, Business or Service</h3>
-                  <p className="text-xs text-text-secondary">Join your neighborhood verified directory</p>
+                  <h3 className="font-bold text-lg text-text-primary">Add Your Business / Shop</h3>
+                  <p className="text-xs text-text-secondary">Save your business permanently to the neighborhood database</p>
                 </div>
                 <button onClick={() => setIsRegisterModalOpen(false)} className="p-2 hover:bg-surface rounded-full transition-colors">
                   <X size={18} className="text-text-secondary" />
                 </button>
               </div>
               <div className="overflow-y-auto p-5">
-                <form id="register-form" onSubmit={(e) => { e.preventDefault(); alert('Listing submitted! Our verification team will review your profile.'); setIsRegisterModalOpen(false); }} className="space-y-4">
+                <form id="register-form" onSubmit={handleAddBusiness} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Place / Business Name</label>
-                    <input required type="text" placeholder="e.g. Radisson Blu Hotel, The Artisan Bakery..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Business / Place Name *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={bizName}
+                      onChange={(e) => setBizName(e.target.value)}
+                      placeholder="e.g. Urvesh Electronics & Mart, The Artisan Cafe..." 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">Type</label>
-                      <select required className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary">
-                        <option value="hotel">Hotel & Stay</option>
-                        <option value="service">Service Provider</option>
-                        <option value="restaurant">Restaurant / Cafe</option>
-                        <option value="shop">Retail / Bakery</option>
-                        <option value="medical">Medical / Clinic</option>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Category *</label>
+                      <select 
+                        required 
+                        value={bizCategory}
+                        onChange={(e) => setBizCategory(e.target.value)}
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary"
+                      >
+                        <option value="Retail / Grocery">Retail / Grocery</option>
+                        <option value="Restaurant / Cafe">Restaurant / Cafe</option>
+                        <option value="Bakery">Bakery & Sweets</option>
+                        <option value="Electronics & IT">Electronics & IT</option>
+                        <option value="Salon & Spa">Salon & Spa</option>
+                        <option value="Medical / Pharmacy">Medical / Pharmacy</option>
+                        <option value="Gym & Fitness">Gym & Fitness</option>
+                        <option value="Hotel & Stay">Hotel & Stay</option>
+                        <option value="Services & Repair">Services & Repair</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-text-primary mb-1">City / Area</label>
-                      <input required type="text" placeholder="e.g. Mumbai, New York..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Area / Society</label>
+                      <input 
+                        type="text" 
+                        value={bizArea}
+                        onChange={(e) => setBizArea(e.target.value)}
+                        placeholder="e.g. Ajeenkya Campus, Pune..." 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Full Street Address</label>
-                    <input required type="text" placeholder="123 Street..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Full Street Address / Shop Number</label>
+                    <input 
+                      type="text" 
+                      value={bizAddress}
+                      onChange={(e) => setBizAddress(e.target.value)}
+                      placeholder="e.g. Shop 101, Main Commercial Wing..." 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Contact Phone *</label>
+                      <input 
+                        required 
+                        type="tel" 
+                        value={bizPhone}
+                        onChange={(e) => setBizPhone(e.target.value)}
+                        placeholder="+91 93735 71631" 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Cover Photo URL (optional)</label>
+                      <input 
+                        type="url" 
+                        value={bizCover}
+                        onChange={(e) => setBizCover(e.target.value)}
+                        placeholder="https://..." 
+                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Phone Number</label>
-                    <input required type="tel" placeholder="+1 (555)..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-text-primary mb-1">Description</label>
-                    <textarea required rows={2} placeholder="Describe rooms, pricing, amenities..." className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary"></textarea>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Tagline & Offerings</label>
+                    <textarea 
+                      rows={2} 
+                      value={bizTagline}
+                      onChange={(e) => setBizTagline(e.target.value)}
+                      placeholder="Special discount for society residents, fast delivery, timings..." 
+                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary"
+                    />
                   </div>
                 </form>
               </div>
               <div className="p-5 border-t border-border-hairline bg-surface-subtle shrink-0">
-                <Button type="submit" form="register-form" className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm">
-                  Submit Listing
+                <Button 
+                  type="submit" 
+                  form="register-form" 
+                  disabled={isSubmittingBiz}
+                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmittingBiz ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={16} />}
+                  <span>Save Business to Database</span>
                 </Button>
               </div>
             </motion.div>

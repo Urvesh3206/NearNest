@@ -1,0 +1,44 @@
+{
+  "businesses": [
+    {
+      "id": "biz_user_1",
+      "name": "Urvesh Enterprises & Mart",
+      "category": "Grocery & Daily Essentials",
+      "lat": 18.606,
+      "lng": 73.875,
+      "distanceKm": 0.2,
+      "distance": "0.2 km",
+      "address": "Shop 101, Ajeenkya Commercial Complex, Pune",
+      "rating": 5.0,
+      "reviews": 14,
+      "phone": "+91 9373571631",
+      "openNow": true,
+      "coverPhoto": "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=800&auto=format&fit=crop",
+      "logo": "https://api.dicebear.com/7.x/initials/svg?seed=Urvesh%20Mart&backgroundColor=059669",
+      "tagline": "Quality daily essentials, organic vegetables & 15-minute doorstep society delivery",
+      "owner": "Urvesh Rane",
+      "isCustom": true,
+      "createdAt": "2026-10-15T00:00:00.000Z"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_user_1",
+      "name": "Urvesh Rane",
+      "category": "Tech & Smart Home Support",
+      "location": "Ajeenkya Residency",
+      "distance": "0.1 km",
+      "verified": true,
+      "rating": 5.0,
+      "reviews": 24,
+      "rate": "₹500/hr",
+      "experience": "5 years",
+      "availableToday": true,
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop",
+      "speciality": "Smart home automation, Wi-Fi mesh setup, CCTV security & computer hardware diagnostics",
+      "phone": "+91 9373571631",
+      "isCustom": true,
+      "createdAt": "2026-10-15T00:00:00.000Z"
+    }
+  ]
+}
