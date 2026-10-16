@@ -3,6 +3,7 @@
 
 interface Env {
   RESEND_API_KEY?: string;
+  NEXT_PUBLIC_RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   EMAIL_USER?: string;
   EMAIL_PASS?: string;

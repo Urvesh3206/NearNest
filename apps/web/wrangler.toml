@@ -5,3 +5,8 @@ compatibility_date = "2024-09-01"
 [assets]
 directory = "./out"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nearnest-db"
+database_id = "9d2a710c-8761-4e3f-a6db-86a964e06580"
