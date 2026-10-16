@@ -70,6 +70,13 @@ enum ServiceProviderStatus {
   REJECTED
 }
 
+enum ServiceBookingStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  DECLINED
+}
+
 enum MessageType {
   TEXT
   IMAGE
@@ -167,7 +174,8 @@ model Resident {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceBookings ServiceBooking[]
 }
 
 model PrivacySettings {
@@ -555,26 +563,22 @@ model ServiceProvider {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings ServiceBooking[]
-  reviews  Review[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceBookings ServiceBooking[]
+  reviews         Review[]
 }
 
 model ServiceBooking {
-  id                 String   @id @default(cuid())
-  serviceProviderId  String
-  userId             String
-  serviceDescription String
-  scheduledDate      DateTime
-  scheduledTime      String
-  duration           Int?
-  address            String?
-  status             String
-  totalPrice         Decimal?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id              String               @id @default(cuid())
+  residentId      String
+  providerId      String
+  taskDescription String
+  status          ServiceBookingStatus @default(PENDING)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
-  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+  resident Resident        @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 }
 
 model Conversation {

@@ -10,8 +10,11 @@ import { Server } from 'socket.io';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 
+import { initializeSocket } from './socket';
+
 const app = express();
 const httpServer = createServer(app);
+const io = initializeSocket(httpServer);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());

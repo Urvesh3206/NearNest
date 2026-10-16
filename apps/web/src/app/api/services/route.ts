@@ -55,9 +55,9 @@ export async function POST(req: Request) {
     }
 
     const data = getDbData();
-    const isOwnerAdmin = Boolean(isAdmin) || (submittedBy && submittedBy.toLowerCase().includes('urvesh')) || name.toLowerCase().includes('urvesh');
-    const initialStatus = isOwnerAdmin ? 'APPROVED' : 'PENDING';
-    const isVerified = isOwnerAdmin;
+    // Make newly added service providers approved and verified so residents can immediately hire them
+    const initialStatus = 'APPROVED';
+    const isVerified = true;
 
     const newService = {
       id: `srv_custom_${Date.now()}`,

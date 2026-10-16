@@ -22,6 +22,7 @@ import {
   ServiceProviderRecord 
 } from '@/app/actions/serviceProviderActions';
 import { useAuth } from '@/providers/AuthProvider';
+import { HireProviderButton } from '@/components/services/HireProviderButton';
 import toast from 'react-hot-toast';
 
 export default function ResidentServicesDirectoryPage() {
@@ -257,25 +258,23 @@ export default function ResidentServicesDirectoryPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const msg = `Hi ${provider.name}, I am a resident at ${residentAddress}. I would like to inquire about your ${provider.category} service.`;
-                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+                  <HireProviderButton
+                    provider={{
+                      id: provider.id,
+                      name: provider.name,
+                      email: provider.email,
+                      category: provider.category,
+                      rate: provider.hourlyRate || provider.rate,
+                      phone: provider.phone,
+                      location: provider.location,
                     }}
-                    className="p-2 rounded-xl bg-surface-subtle hover:bg-emerald-500/10 text-text-tertiary hover:text-emerald-600 border border-border-hairline transition-colors"
-                    title="WhatsApp Specialist"
-                  >
-                    <Phone className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      toast.success(`Hire request sent to ${provider.name}! They will contact you shortly.`);
+                    residentContext={{
+                      location: residentAddress,
+                      society: residentAddress,
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm"
-                  >
-                    Hire Pro
-                  </button>
+                    buttonText="Hire Pro"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  />
                 </div>
               </div>
             </div>

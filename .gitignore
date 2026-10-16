@@ -36,3 +36,16 @@ dist/
 # prisma
 apps/server/prisma/*.db
 apps/server/prisma/*.db-journal
+
+# python & venv
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# standalone evaluation & subprojects
+backend/
+frontend/
+eval.py
+Makefile

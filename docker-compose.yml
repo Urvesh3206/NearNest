@@ -1,25 +1,23 @@
 version: '3.8'
+
 services:
-  postgres:
-    image: postgres:16-alpine
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: neighbourhub
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+      - REPLAY=1
+      - PYTHONUNBUFFERED=1
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "6379:6379"
-    volumes:
-      - redisdata:/data
+      - "3000:3000"
+    depends_on:
+      - backend
     restart: unless-stopped
-
-volumes:
-  pgdata:
-  redisdata:

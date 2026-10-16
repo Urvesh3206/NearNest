@@ -1,28 +1,59 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Star, MapPin, Briefcase, Clock,
   ShieldCheck, X, DollarSign, Plus, CheckCircle2, Navigation, Phone, Calendar,
-  Home, ArrowLeft, ChevronRight, Trash2, Loader2, Mail, Send, ExternalLink, MessageSquare, Check
+  Home, ArrowLeft, ChevronRight, Trash2, Loader2, Mail, Send, ExternalLink,
+  SlidersHorizontal, Compass, Check, List, Map as MapIcon, Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
 import { useAuth } from "@/providers/AuthProvider";
 import { addPendingVerification, getLocalVerifications } from "@/lib/verificationStore";
+import { ServiceProviderCard } from "@/components/services/ServiceProviderCard";
+import { calculateHaversineKm } from "@/app/actions/serviceProviderActions";
+import { LocationMap, MapPlace } from "@/components/ui/LocationMap";
+import { EmailConfigModal } from "@/components/services/EmailConfigModal";
+import { 
+  getBrowserLiveCoordinates, 
+  reverseGeocode, 
+  searchWorldwidePlaces, 
+  generatePlacesAroundCoordinates,
+  GeocodedPlace,
+  calculateHaversineDistanceKm
+} from "@/lib/geo";
 import toast from "react-hot-toast";
 
-const CATEGORIES = ["All", "Electrician", "Plumber", "Maid", "Cook", "Tutor", "AC Repair", "Carpenter", "Painter", "Yoga Trainer", "Babysitter", "RO Repair", "Driver", "Mechanic"];
+const DEFAULT_LAT = 18.6220; // DY Patil University Road, Pimpri-Chinchwad
+const DEFAULT_LNG = 73.8240;
+const DEFAULT_LOCATION_NAME = "DY Patil University Road, Pimpri-Chinchwad";
 
-const NEIGHBORHOODS = [
-  "All Locations",
-  "Greenfield Park",
-  "Riverside Heights",
-  "Downtown Central",
-  "Maplewood West",
-  "Sunnyvale"
+const CATEGORIES = [
+  "All", 
+  "Electrician", 
+  "Plumber", 
+  "Maid", 
+  "Cook", 
+  "Tutor", 
+  "AC Repair", 
+  "Carpenter", 
+  "Painter", 
+  "Yoga Trainer", 
+  "Babysitter", 
+  "RO Repair", 
+  "Driver", 
+  "Mechanic"
+];
+
+const QUICK_EXPLORE_CITIES = [
+  { name: "Pimpri-Chinchwad", lat: 18.6220, lng: 73.8240 },
+  { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
+  { name: "Bengaluru", lat: 12.9716, lng: 77.5946 },
+  { name: "New York", lat: 40.7128, lng: -74.0060 },
+  { name: "London", lat: 51.5074, lng: -0.1278 },
 ];
 
 const PROVIDERS = [
@@ -30,8 +61,10 @@ const PROVIDERS = [
     id: "1",
     name: "Rajesh Kumar",
     category: "Electrician",
-    location: "Greenfield Park",
-    distance: "0.3 km",
+    location: "DY Patil University Road",
+    lat: 18.6225,
+    lng: 73.8248,
+    pincode: "411033",
     verified: true,
     rating: 4.9,
     reviews: 120,
@@ -47,8 +80,10 @@ const PROVIDERS = [
     id: "2",
     name: "Sunita Devi",
     category: "Maid",
-    location: "Riverside Heights",
-    distance: "0.5 km",
+    location: "Sant Tukaram Nagar",
+    lat: 18.6205,
+    lng: 73.8260,
+    pincode: "411033",
     verified: true,
     rating: 4.7,
     reviews: 85,
@@ -64,8 +99,10 @@ const PROVIDERS = [
     id: "3",
     name: "Amit Patel",
     category: "Plumber",
-    location: "Downtown Central",
-    distance: "0.9 km",
+    location: "Pimpri Colony",
+    lat: 18.6240,
+    lng: 73.8210,
+    pincode: "411017",
     verified: true,
     rating: 4.8,
     reviews: 94,
@@ -81,8 +118,10 @@ const PROVIDERS = [
     id: "4",
     name: "Elena Rostova",
     category: "Tutor",
-    location: "Maplewood West",
-    distance: "1.2 km",
+    location: "Akurdi Pradhikaran",
+    lat: 18.6400,
+    lng: 73.7800,
+    pincode: "411044",
     verified: true,
     rating: 5.0,
     reviews: 64,
@@ -98,8 +137,10 @@ const PROVIDERS = [
     id: "5",
     name: "Vikram Singh",
     category: "AC Repair",
-    location: "Greenfield Park",
-    distance: "0.6 km",
+    location: "DY Patil University Road",
+    lat: 18.6218,
+    lng: 73.8252,
+    pincode: "411033",
     verified: true,
     rating: 4.8,
     reviews: 110,
@@ -115,8 +156,10 @@ const PROVIDERS = [
     id: "6",
     name: "Priya Sharma",
     category: "Yoga Trainer",
-    location: "Riverside Heights",
-    distance: "0.7 km",
+    location: "Chinchwad Station",
+    lat: 18.6270,
+    lng: 73.8150,
+    pincode: "411033",
     verified: true,
     rating: 4.9,
     reviews: 76,
@@ -132,8 +175,10 @@ const PROVIDERS = [
     id: "7",
     name: "Michael Chen",
     category: "Carpenter",
-    location: "Downtown Central",
-    distance: "0.8 km",
+    location: "Sant Tukaram Nagar",
+    lat: 18.6210,
+    lng: 73.8275,
+    pincode: "411033",
     verified: true,
     rating: 4.7,
     reviews: 58,
@@ -149,8 +194,10 @@ const PROVIDERS = [
     id: "8",
     name: "Sarah Jenkins",
     category: "Babysitter",
-    location: "Greenfield Park",
-    distance: "0.4 km",
+    location: "Pimpri",
+    lat: 18.6235,
+    lng: 73.8225,
+    pincode: "411017",
     verified: true,
     rating: 5.0,
     reviews: 82,
@@ -164,42 +211,41 @@ const PROVIDERS = [
   }
 ];
 
-
 function ServicesContent() {
   const searchParams = useSearchParams();
-  const initialLocation = searchParams.get("location") || "All Locations";
+  const initialLocation = searchParams.get("location") || "";
   const initialSearch = searchParams.get("search") || "";
   const initialCategory = searchParams.get("category") || "All";
 
   const { user } = useAuth();
   const [customServices, setCustomServices] = useState<any[]>([]);
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState(initialLocation);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [bookingProvider, setBookingProvider] = useState<any>(null);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
-  // Booking Form State
-  const [bookingService, setBookingService] = useState("");
-  const [bookingDate, setBookingDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split("T")[0];
+  // Proximity & Real-world Location Explorer State
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number }>({
+    lat: DEFAULT_LAT,
+    lng: DEFAULT_LNG,
   });
-  const [bookingTime, setBookingTime] = useState("10:00");
-  const [bookingSociety, setBookingSociety] = useState((user as any)?.society || "Greenfield Residency");
-  const [bookingUnit, setBookingUnit] = useState((user as any)?.unit || "Flat 402, Tower B");
-  const [bookingResidentName, setBookingResidentName] = useState(user?.name || "Resident Member");
-  const [bookingPhone, setBookingPhone] = useState(user?.phone || "+91 98765 43210");
-  const [bookingResidentEmail, setBookingResidentEmail] = useState(user?.email || "resident@nearnest.com");
-  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
-  const [bookedDetails, setBookedDetails] = useState<any>(null);
+  const [activeLocationName, setActiveLocationName] = useState<string>(
+    initialLocation || DEFAULT_LOCATION_NAME
+  );
+  const [locationInput, setLocationInput] = useState<string>(
+    initialLocation || DEFAULT_LOCATION_NAME
+  );
+  const [placeSuggestions, setPlaceSuggestions] = useState<GeocodedPlace[]>([]);
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [maxRadiusKm, setMaxRadiusKm] = useState<number>(3); // Default 3 km (Local Area)
+  const [displayType, setDisplayType] = useState<"cards" | "map">("cards"); // Strict Cards view by default!
 
   // Form state for adding provider
   const [srvName, setSrvName] = useState(user?.name || "");
   const [srvCategory, setSrvCategory] = useState("Electrician");
-  const [srvNeighborhood, setSrvNeighborhood] = useState("Greenfield Park");
+  const [srvNeighborhood, setSrvNeighborhood] = useState("DY Patil University Road");
   const [srvRate, setSrvRate] = useState("₹350/hr");
   const [srvExperience, setSrvExperience] = useState("4 years");
   const [srvPhone, setSrvPhone] = useState(user?.phone || "+91 93735 71631");
@@ -226,7 +272,6 @@ function ServicesContent() {
         let list = stored ? JSON.parse(stored) : [];
         if (!Array.isArray(list)) list = [];
 
-        // Synchronize with admin verification store decisions (Approve / Reject)
         const verifs = getLocalVerifications();
         let changed = false;
         list = list.map((srv: any) => {
@@ -251,10 +296,73 @@ function ServicesContent() {
     loadServices();
   }, []);
 
+  // Live real place search debounce using OpenStreetMap Nominatim
+  useEffect(() => {
+    if (!locationInput.trim() || locationInput.length < 2) {
+      setPlaceSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingPlaces(true);
+      const results = await searchWorldwidePlaces(locationInput);
+      setPlaceSuggestions(results);
+      setIsSearchingPlaces(false);
+      setIsSuggestionsOpen(true);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [locationInput]);
+
+  // Initial geocode if location param provided
+  useEffect(() => {
+    if (initialLocation && initialLocation !== DEFAULT_LOCATION_NAME) {
+      searchWorldwidePlaces(initialLocation).then((places) => {
+        if (places.length > 0) {
+          setCurrentCoords({ lat: places[0].lat, lng: places[0].lng });
+          setActiveLocationName(places[0].displayName.split(",")[0]);
+        }
+      });
+    }
+  }, [initialLocation]);
+
+  // Real device GPS detection handler
+  const handleDetectLiveLocation = async () => {
+    setIsLocating(true);
+    try {
+      const coords = await getBrowserLiveCoordinates();
+      setCurrentCoords({ lat: coords.lat, lng: coords.lng });
+
+      const geo = await reverseGeocode(coords.lat, coords.lng);
+      const name = geo.neighborhood || geo.city || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+      setActiveLocationName(name);
+      setLocationInput(geo.formattedAddress || name);
+      toast.success("Live GPS acquired! Showing closest nearby specialists.", { icon: "📍" });
+    } catch (err: any) {
+      toast.error("Could not access GPS location. Please allow browser location permissions or choose a city.");
+    } finally {
+      setIsLocating(false);
+      setIsSuggestionsOpen(false);
+    }
+  };
+
+  const handleSelectPlace = (place: GeocodedPlace) => {
+    setCurrentCoords({ lat: place.lat, lng: place.lng });
+    const name = place.name || place.displayName.split(",")[0];
+    setActiveLocationName(name);
+    setLocationInput(place.displayName);
+    setIsSuggestionsOpen(false);
+    toast.success(`Location set to: ${name}`);
+  };
+
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!srvName.trim()) {
-      toast.error("Please enter your name");
+      toast.error("Please enter provider's full name");
+      return;
+    }
+    if (!srvEmail.trim() || !srvEmail.includes('@')) {
+      toast.error("Please enter a valid notification email address (e.g. your_email@gmail.com) so residents can send job requests to your inbox.");
       return;
     }
     setIsSubmittingSrv(true);
@@ -263,12 +371,15 @@ function ServicesContent() {
       const payload = {
         name: srvName,
         category: srvCategory,
-        location: srvNeighborhood,
+        location: srvNeighborhood || activeLocationName,
+        lat: currentCoords.lat,
+        lng: currentCoords.lng,
+        pincode: "411033",
         rate: srvRate,
         experience: srvExperience,
         speciality: srvSpeciality || `Professional ${srvCategory} services with neighborhood warranty and quick response`,
         phone: srvPhone,
-        email: srvEmail || `${srvName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
+        email: srvEmail.trim(),
         avatar: user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(srvName)}&backgroundColor=b6e3f4`,
         isAdmin,
         submittedBy: `${user?.name || srvName} (${user?.role || 'Resident'})`,
@@ -285,7 +396,6 @@ function ServicesContent() {
         setCustomServices(updated);
         localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
 
-        // Always register in verificationStore so it appears in Admin verification requests
         addPendingVerification({
           id: result.service.id,
           name: result.service.name,
@@ -296,19 +406,15 @@ function ServicesContent() {
           experience: result.service.experience,
           phone: result.service.phone,
           email: result.service.email,
-          status: (result.service.status || (isAdmin ? 'APPROVED' : 'PENDING')) as 'APPROVED' | 'PENDING',
+          status: 'APPROVED',
           avatar: result.service.avatar,
           submittedBy: payload.submittedBy,
         });
 
-        if (result.service.status === 'APPROVED') {
-          toast.success(`Service Provider "${result.service.name}" verified & published live! 🎉`);
-        } else {
-          toast.success(`Application sent to Admin Urvesh Rane for verification! Once approved, your profile will be published live.`, {
-            duration: 6000,
-            icon: '📋',
-          });
-        }
+        toast.success(`Service Provider "${result.service.name}" registered & published live! Residents can now hire you and job alerts will go to ${result.service.email}. 🎉`, {
+          duration: 6000,
+        });
+        setIsJoinModalOpen(false);
       } else {
         throw new Error(result.error || "Save failed");
       }
@@ -318,8 +424,12 @@ function ServicesContent() {
         id: `srv_custom_${Date.now()}`,
         name: srvName,
         category: srvCategory,
-        location: srvNeighborhood,
+        location: srvNeighborhood || activeLocationName,
+        lat: currentCoords.lat,
+        lng: currentCoords.lng,
+        pincode: "411033",
         distance: "0.2 km",
+        distanceKm: 0.2,
         verified: isPlatformAdmin,
         status: (isPlatformAdmin ? 'APPROVED' : 'PENDING') as 'APPROVED' | 'PENDING',
         rating: 5.0,
@@ -338,7 +448,6 @@ function ServicesContent() {
       setCustomServices(updated);
       localStorage.setItem('nearnest_custom_services', JSON.stringify(updated));
 
-      // Synchronize into verificationStore for the Admin panel!
       addPendingVerification({
         id: fallbackSrv.id,
         name: fallbackSrv.name,
@@ -373,217 +482,125 @@ function ServicesContent() {
     toast.success(`"${name}" removed from database`);
   };
 
-  useEffect(() => {
-    if (initialLocation && initialLocation !== "All Locations") {
-      setSelectedNeighborhood(initialLocation);
-    }
-    if (initialSearch) {
-      setSearchQuery(initialSearch);
-    }
-    if (initialCategory && initialCategory !== "All") {
-      setActiveCategory(initialCategory);
-    }
-  }, [initialLocation, initialSearch, initialCategory]);
+  // Generate real dynamic services positioned near the active location coordinates
+  const { services: dynamicServices } = generatePlacesAroundCoordinates(
+    currentCoords.lat,
+    currentCoords.lng,
+    activeLocationName
+  );
 
-  const allProviders = [...customServices, ...PROVIDERS];
+  const baseDynamicProviders = dynamicServices.map((s) => ({
+    id: s.id,
+    name: s.name,
+    category: s.category.includes("Electrician") ? "Electrician"
+      : s.category.includes("Maid") || s.category.includes("Housekeeper") ? "Maid"
+      : s.category.includes("Plumber") ? "Plumber"
+      : s.category.includes("AC") ? "AC Repair"
+      : s.category.includes("Tutor") ? "Tutor"
+      : s.category.includes("Yoga") ? "Yoga Trainer"
+      : s.category.includes("Carpenter") ? "Carpenter"
+      : s.category.includes("Babysitter") ? "Babysitter"
+      : s.category,
+    location: activeLocationName,
+    lat: s.lat,
+    lng: s.lng,
+    pincode: "411033",
+    verified: true,
+    rating: s.rating,
+    reviews: s.reviews,
+    rate: s.rate,
+    experience: s.experience,
+    availableToday: s.availableToday,
+    avatar: s.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(s.name)}&backgroundColor=c0aede`,
+    speciality: s.speciality,
+    phone: s.phone,
+    email: `${s.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
+    isCustom: false,
+  }));
 
-  const filteredProviders = allProviders.filter(p => {
-    // Hide unapproved/rejected custom providers from general public, unless viewer is Admin or the submitter
-    if (p.isCustom && p.status === 'PENDING') {
-      const isOwner = user?.name && (p.submittedBy?.includes(user.name) || p.name === user.name);
-      const isPlatformAdmin = user?.role === 'ADMIN';
-      if (!isOwner && !isPlatformAdmin) return false;
-    }
-    if (p.isCustom && p.status === 'REJECTED') {
-      return false;
-    }
+  // Combine with custom services and base static providers
+  const allProvidersList = [
+    ...customServices,
+    ...baseDynamicProviders,
+    ...PROVIDERS.map(p => ({ ...p, id: `base-${p.id}` }))
+  ];
 
-    if (selectedNeighborhood !== "All Locations" && !p.location.toLowerCase().includes(selectedNeighborhood.toLowerCase())) {
-      return false;
-    }
-    if (activeCategory !== "All" && p.category.toLowerCase() !== activeCategory.toLowerCase()) {
-      return false;
-    }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.speciality.toLowerCase().includes(q) ||
-        p.location.toLowerCase().includes(q)
-      );
-    }
-    return true;
+  // Deduplicate by name
+  const uniqueProviders = Array.from(
+    new Map(allProvidersList.map(p => [p.name.toLowerCase(), p])).values()
+  );
+
+  // Compute real dynamic Haversine distance from current active coordinates
+  const providersWithProximity = uniqueProviders.map((provider) => {
+    const pCoords = provider.lat && provider.lng
+      ? { lat: provider.lat, lng: provider.lng }
+      : { lat: currentCoords.lat + 0.002, lng: currentCoords.lng + 0.002 };
+
+    const distanceKm = calculateHaversineKm(currentCoords.lat, currentCoords.lng, pCoords.lat, pCoords.lng);
+
+    return {
+      ...provider,
+      lat: pCoords.lat,
+      lng: pCoords.lng,
+      distanceKm,
+      distance: `${distanceKm} km`,
+    };
   });
 
-  const openBookingModal = (provider: any) => {
-    setBookingProvider(provider);
-    setBookingSuccess(false);
-    setBookedDetails(null);
-    setBookingService("");
-    if (user?.name) setBookingResidentName(user.name);
-    if (user?.phone) setBookingPhone(user.phone);
-    if (user?.email) setBookingResidentEmail(user.email);
-    if ((user as any)?.society) setBookingSociety((user as any).society);
-    if ((user as any)?.unit) setBookingUnit((user as any).unit);
-  };
-
-  const handleBook = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bookingService.trim()) {
-      toast.error("Please enter the service required");
-      return;
-    }
-    if (!bookingUnit.trim()) {
-      toast.error("Please enter your flat or unit address");
-      return;
-    }
-    setIsSubmittingBooking(true);
-
-    const providerEmail = bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
-    const targetSubject = `[NearNest Work Request] Please come to ${bookingUnit} for ${bookingService}`;
-    const targetBody = `Dear ${bookingProvider?.name},
-
-You have received an official service work order from a society member on NearNest.
-
-Please come to the society member premises at the scheduled time to inspect and complete the work:
-
-=========================================
-📍 WORK ORDER & LOCATION DETAILS:
-=========================================
-• Destination Address & Flat: ${bookingUnit}
-• Society Member: ${bookingResidentName}
-• Member Contact Phone: ${bookingPhone}
-• Member Email: ${bookingResidentEmail}
-
-=========================================
-🛠️ SERVICE DETAILS:
-=========================================
-• Service Category: ${bookingProvider?.category}
-• Work Required: ${bookingService}
-• Scheduled Date: ${bookingDate}
-• Preferred Time: ${bookingTime}
-• Estimated Rate: ${bookingProvider?.rate}
-
-=========================================
-INSTRUCTIONS FOR SERVICE PROVIDER:
-=========================================
-1. Please confirm your arrival time with the society member by replying to this email or calling ${bookingPhone}.
-2. Carry your government or NearNest ID for security gate entry.
-3. Complete the work professionally and collect payment directly as per agreed terms.
-
-Thank you,
-NearNest Community & Society Services Team`;
-
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(providerEmail)}&su=${encodeURIComponent(targetSubject)}&body=${encodeURIComponent(targetBody)}`;
-
-    // Automatically open Gmail with the pre-filled work order!
-    try {
-      window.open(gmailUrl, '_blank');
-    } catch (err) {
-      console.warn('Popup blocked by browser:', err);
-    }
-
-    try {
-      const payload = {
-        providerId: bookingProvider?.id,
-        providerName: bookingProvider?.name,
-        providerCategory: bookingProvider?.category,
-        providerEmail: providerEmail,
-        providerPhone: bookingProvider?.phone || "+91 9373571631",
-        residentName: bookingResidentName,
-        residentEmail: bookingResidentEmail,
-        residentPhone: bookingPhone,
-        societyName: bookingSociety,
-        unitAddress: bookingUnit,
-        serviceRequired: bookingService,
-        date: bookingDate,
-        time: bookingTime,
-        rate: bookingProvider?.rate,
-      };
-
-      const res = await fetch('/api/services/book', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success && data.booking) {
-        setBookedDetails(data.booking);
-      } else {
-        setBookedDetails({ ...payload, id: `book_${Date.now()}` });
+  // Strict Proximity & Search Filtering
+  const filteredProviders = providersWithProximity
+    .filter((p) => {
+      // 1. Hide unapproved custom services from public
+      if (p.isCustom && p.status === 'PENDING') {
+        const isOwner = user?.name && (p.submittedBy?.includes(user.name) || p.name === user.name);
+        const isPlatformAdmin = user?.role === 'ADMIN';
+        if (!isOwner && !isPlatformAdmin) return false;
       }
-      setBookingSuccess(true);
-      toast.success(`Hire request & Gmail work order prepared for ${bookingProvider?.name} (${providerEmail})!`);
-    } catch (err) {
-      setBookedDetails({
-        providerId: bookingProvider?.id,
-        providerName: bookingProvider?.name,
-        providerCategory: bookingProvider?.category,
-        providerEmail: providerEmail,
-        providerPhone: bookingProvider?.phone || "+91 9373571631",
-        residentName: bookingResidentName,
-        residentEmail: bookingResidentEmail,
-        residentPhone: bookingPhone,
-        societyName: bookingSociety,
-        unitAddress: bookingUnit,
-        serviceRequired: bookingService,
-        date: bookingDate,
-        time: bookingTime,
-        rate: bookingProvider?.rate,
-        id: `book_${Date.now()}`,
-      });
-      setBookingSuccess(true);
-      toast.success(`Hire request dispatched!`);
-    } finally {
-      setIsSubmittingBooking(false);
-    }
-  };
+      if (p.isCustom && p.status === 'REJECTED') {
+        return false;
+      }
 
-  const emailTo = bookedDetails?.providerEmail || bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
-  const emailSubject = `[NearNest Work Request] Please come to ${bookedDetails?.unitAddress || bookingUnit}, ${bookedDetails?.societyName || bookingSociety} for ${bookedDetails?.serviceRequired || bookingService}`;
-  const emailBody = `Dear ${bookingProvider?.name || 'Service Provider'},
+      // 2. STRICT RADIUS FILTER: only show providers within selected maxRadiusKm!
+      if (p.distanceKm > maxRadiusKm) {
+        return false;
+      }
 
-You have received an official service work order from a society member on NearNest.
+      // 3. Category Filter
+      if (activeCategory !== "All" && p.category.toLowerCase() !== activeCategory.toLowerCase()) {
+        return false;
+      }
 
-Please come to the society member premises at the scheduled time to inspect and complete the work:
+      // 4. Search Text Query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          (p.speciality && p.speciality.toLowerCase().includes(q)) ||
+          (p.location && p.location.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    })
+    // Sort strictly by closest distance first!
+    .sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
 
-=========================================
-📍 WORK ORDER & LOCATION DETAILS:
-=========================================
-• Society / Apartment: ${bookedDetails?.societyName || bookingSociety}
-• Flat / Tower Unit: ${bookedDetails?.unitAddress || bookingUnit}
-• Society Member: ${bookedDetails?.residentName || bookingResidentName}
-• Member Contact Phone: ${bookedDetails?.residentPhone || bookingPhone}
-• Member Email: ${bookedDetails?.residentEmail || bookingResidentEmail}
-
-=========================================
-🛠️ SERVICE DETAILS:
-=========================================
-• Service Category: ${bookingProvider?.category}
-• Work Required: ${bookedDetails?.serviceRequired || bookingService}
-• Scheduled Date: ${bookedDetails?.date || bookingDate}
-• Preferred Time: ${bookedDetails?.time || bookingTime}
-• Estimated Rate: ${bookingProvider?.rate}
-
-=========================================
-INSTRUCTIONS FOR SERVICE PROVIDER:
-=========================================
-1. Please confirm your arrival time with the society member by replying to this email or calling ${bookedDetails?.residentPhone || bookingPhone}.
-2. Carry your government or NearNest ID for security gate entry at ${bookedDetails?.societyName || bookingSociety}.
-3. Complete the work professionally and collect payment directly as per agreed terms.
-
-Thank you,
-NearNest Community & Society Services Team`;
-
-  const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailTo)}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-  const mailtoUrl = `mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-  const cleanPhone = (bookingProvider?.phone || "").replace(/[^0-9]/g, "");
-  const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(`Hi ${bookingProvider?.name}, I booked your service on NearNest for "${bookedDetails?.serviceRequired || bookingService}" at ${bookedDetails?.unitAddress || bookingUnit}, ${bookedDetails?.societyName || bookingSociety} on ${bookedDetails?.date || bookingDate} at ${bookedDetails?.time || bookingTime}. Please check your Gmail or reply here to confirm. Thanks!`)}`;
+  const mapPlaces: MapPlace[] = filteredProviders.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    lat: p.lat || currentCoords.lat,
+    lng: p.lng || currentCoords.lng,
+    distance: p.distance || "0.3 km",
+    type: "service",
+    rating: p.rating || 4.9,
+    rate: p.rate || (p as any).hourlyRate,
+    phone: p.phone,
+  }));
 
   return (
-    <div className="space-y-8">
-      {/* Breadcrumbs & Navigation Back Link */}
+    <div className="space-y-6">
+      {/* Breadcrumbs & Navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
           <Link href="/" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
@@ -600,77 +617,289 @@ NearNest Community & Society Services Team`;
 
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-brand-600 bg-surface border border-border-hairline hover:border-brand-500/30 hover:bg-brand-50/50 dark:hover:bg-brand-950/20 transition-all shadow-sm"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-brand-600 bg-surface border border-border-hairline hover:border-brand-500/30 transition-all shadow-sm"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Home</span>
         </Link>
       </div>
 
-      {/* Header */}
+      {/* Header: Exact match to Screenshot */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary">Verified Service Providers</h1>
-          <p className="text-text-secondary mt-1">Hire trusted, background-checked neighborhood professionals</p>
-        </div>
-        <Button 
-          onClick={() => setIsJoinModalOpen(true)}
-          className="bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-sm flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Join as Provider
-        </Button>
-      </div>
-
-      {/* Location Filter Pills */}
-      <div className="bg-surface p-4 rounded-2xl border border-border-hairline shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
-            <MapPin className="w-4 h-4 text-brand-500" />
-            <span>Search by Neighborhood Location</span>
-          </div>
-          <button
-            onClick={() => setSelectedNeighborhood("Greenfield Park")}
-            className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 dark:bg-brand-950/40 px-2.5 py-1 rounded-full"
-          >
-            <Navigation className="w-3 h-3" />
-            <span>Nearby GPS</span>
-          </button>
+          <h1 className="text-3xl font-bold text-text-primary flex items-center gap-2">
+            <span>Nearby Location Explorer</span>
+            <span className="text-xs font-semibold px-2.5 py-1 bg-brand-500/10 text-brand-600 rounded-full border border-brand-500/20">
+              Hotels • Services • Shops
+            </span>
+          </h1>
+          <p className="text-text-secondary mt-1">
+            Real GPS proximity detection for hotels, stays, verified services & local specialists
+          </p>
         </div>
 
-        <div className="flex overflow-x-auto gap-2 pb-1 hide-scrollbar">
-          {NEIGHBORHOODS.map(hood => (
+        <div className="flex items-center gap-2">
+          {/* Cards vs Interactive Map View Toggle */}
+          <div className="flex items-center p-1 bg-surface rounded-2xl border border-border-hairline shadow-sm">
             <button
-              key={hood}
-              onClick={() => setSelectedNeighborhood(hood)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                selectedNeighborhood === hood
-                  ? "bg-brand-500 text-white shadow-sm font-semibold"
-                  : "bg-surface-subtle text-text-secondary hover:text-text-primary hover:bg-surface border border-border-hairline"
+              onClick={() => setDisplayType("cards")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                displayType === "cards"
+                  ? "bg-brand-500 text-white shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <MapPin className={`w-3 h-3 ${selectedNeighborhood === hood ? 'text-white' : 'text-text-tertiary'}`} />
-              {hood}
+              <List className="w-3.5 h-3.5" />
+              <span>Cards</span>
             </button>
-          ))}
+            <button
+              onClick={() => setDisplayType("map")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                displayType === "map"
+                  ? "bg-brand-500 text-white shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>Interactive Map</span>
+            </button>
+          </div>
+
+          <Button 
+            onClick={() => setIsEmailModalOpen(true)}
+            variant="outline"
+            className="flex items-center gap-1.5 rounded-xl shadow-sm text-xs py-2 px-3.5 border-border-hairline bg-surface hover:bg-surface-subtle text-text-primary"
+          >
+            <Mail size={15} className="text-brand-500" />
+            <span>Email Setup</span>
+          </Button>
+
+          <Button 
+            onClick={() => setIsJoinModalOpen(true)}
+            className="flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-sm text-xs py-2 px-3.5"
+          >
+            <Plus size={16} />
+            <span>Join as Provider</span>
+          </Button>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="flex flex-col space-y-4">
+      {/* Real Geocoding & GPS Location Input Bar (Exact match to Screenshot) */}
+      <div className="bg-surface p-5 rounded-3xl border border-border-hairline shadow-card space-y-4 relative z-30">
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          {/* Worldwide Location Search Box */}
+          <div className="flex-1 w-full relative">
+            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500 w-5 h-5" />
+            <input 
+              type="text"
+              value={locationInput}
+              onChange={(e) => setLocationInput(e.target.value)}
+              onFocus={() => { if (placeSuggestions.length > 0) setIsSuggestionsOpen(true); }}
+              placeholder="Search any real location, hotel, street or city (e.g. Bandra Mumbai, Times Square NY, London)..."
+              className="w-full pl-11 pr-32 py-3 bg-canvas border border-border-hairline rounded-2xl text-text-primary text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all shadow-inner"
+            />
+
+            {/* Clear and GPS Trigger Button */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {locationInput && (
+                <button
+                  onClick={() => { setLocationInput(""); setPlaceSuggestions([]); }}
+                  className="text-xs text-text-tertiary hover:text-text-primary p-1 mr-1"
+                >
+                  ✕
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleDetectLiveLocation}
+                disabled={isLocating}
+                className="px-3 py-1.5 bg-brand-500 text-white hover:bg-brand-600 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
+              >
+                {isLocating ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Locating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>My Real GPS</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Real OpenStreetMap Worldwide Autocomplete Suggestions Dropdown */}
+            <AnimatePresence>
+              {isSuggestionsOpen && placeSuggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-2xl shadow-modal border border-border-hairline overflow-hidden z-50 divide-y divide-border-hairline"
+                >
+                  <div className="px-4 py-2 bg-surface-subtle text-[11px] font-semibold text-text-tertiary uppercase tracking-wider flex justify-between items-center">
+                    <span>Real-World Locations</span>
+                    <button onClick={() => setIsSuggestionsOpen(false)} className="hover:text-text-primary">Close</button>
+                  </div>
+                  {placeSuggestions.map((place) => (
+                    <button
+                      key={place.placeId}
+                      type="button"
+                      onClick={() => handleSelectPlace(place)}
+                      className="w-full px-4 py-2.5 text-left text-xs hover:bg-surface-subtle transition-colors flex items-start gap-2.5 group"
+                    >
+                      <MapPin className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-text-primary group-hover:text-brand-600 transition-colors">
+                          {place.name}
+                        </div>
+                        <div className="text-text-secondary text-[11px] truncate">
+                          {place.displayName}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Distance Radius Filter (1 km, 3 km, 5 km, 10 km) */}
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <span className="text-xs text-text-secondary whitespace-nowrap font-medium">Radius:</span>
+            <select
+              value={maxRadiusKm}
+              onChange={(e) => setMaxRadiusKm(Number(e.target.value))}
+              className="py-2.5 px-3 bg-canvas border border-border-hairline rounded-xl text-xs font-semibold text-text-primary outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value={1}>1 km (Walking)</option>
+              <option value={3}>3 km (Local Area)</option>
+              <option value={5}>5 km (Neighborhood)</option>
+              <option value={10}>10 km (City-wide)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Real Coordinates & Active Center Location Pill */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border-hairline text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-text-tertiary">Active Center:</span>
+            <span className="font-bold text-text-primary flex items-center gap-1.5 bg-brand-50 dark:bg-brand-950/40 text-brand-600 px-3 py-1 rounded-full border border-brand-500/20">
+              <Compass className="w-3.5 h-3.5 text-brand-500" />
+              {activeLocationName}
+            </span>
+            <span className="text-[11px] text-text-tertiary">
+              ({currentCoords.lat.toFixed(4)}° N, {currentCoords.lng.toFixed(4)}° E)
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              🟢 {filteredProviders.length} nearby specialists within {maxRadiusKm} km
+            </span>
+          </div>
+
+          {/* Quick Explore City Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-text-tertiary">Quick Explore:</span>
+            {QUICK_EXPLORE_CITIES.map((city) => (
+              <button
+                key={city.name}
+                onClick={() => {
+                  setCurrentCoords({ lat: city.lat, lng: city.lng });
+                  setActiveLocationName(city.name);
+                  setLocationInput(city.name);
+                }}
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                  activeLocationName.includes(city.name)
+                    ? "bg-brand-500 text-white border-brand-500"
+                    : "bg-surface-subtle text-text-secondary border-border-hairline hover:text-text-primary"
+                }`}
+              >
+                {city.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Conditionally Show Interactive Map ONLY if displayType is 'map' */}
+      {displayType === "map" && (
+        <div className="bg-surface rounded-3xl border border-border-hairline shadow-card overflow-hidden">
+          <div className="p-4 px-6 border-b border-border-hairline bg-surface-subtle/50 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-base border border-emerald-500/20">
+                🗺️
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                  <span>Interactive Live Location & Proximity Map</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold">
+                    Live Radar Active
+                  </span>
+                </h3>
+                <p className="text-[11px] text-text-tertiary">
+                  Visualizing your active pin & {filteredProviders.length} nearby specialists with distance radius.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setDisplayType("cards")}
+              className="px-3 py-1.5 rounded-xl bg-surface border border-border-hairline text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Switch to Cards View</span>
+            </button>
+          </div>
+
+          <div className="p-4 space-y-3">
+            <LocationMap
+              userLat={currentCoords.lat}
+              userLng={currentCoords.lng}
+              locationName={activeLocationName}
+              radiusKm={maxRadiusKm}
+              places={mapPlaces}
+              className="h-72 sm:h-84 w-full rounded-2xl overflow-hidden shadow-inner border border-border-hairline"
+            />
+
+            {/* Live Map Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-text-tertiary pt-1 px-1">
+              <div className="flex items-center gap-4 flex-wrap">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-sm ring-2 ring-emerald-300" />
+                  <strong className="text-text-primary">Active Center</strong> (Live Marker)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-sky-500 inline-block shadow-sm" />
+                  <strong className="text-text-primary">Nearby Verified Specialists</strong> (Click pin for popup)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-4 border-b-2 border-dashed border-emerald-500 inline-block" />
+                  <span>{maxRadiusKm} km Geofenced Radius</span>
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-emerald-600 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                GPS: {currentCoords.lat.toFixed(4)}, {currentCoords.lng.toFixed(4)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Bar & Category Filter Pills */}
+      <div className="space-y-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
           <input 
             type="text" 
-            placeholder="Search by specialty (e.g. plumber, electrician, tutor, deep cleaning)..."
-            className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border-hairline rounded-xl focus:ring-2 focus:ring-brand-500 text-text-primary transition-all outline-none shadow-sm"
+            placeholder="Search nearby specialists by name or category (e.g., electrician, plumber, AC repair, yoga, cleaning)..."
+            className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border-hairline rounded-2xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm text-text-primary transition-all outline-none shadow-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery("")} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs font-semibold px-2 py-0.5 rounded-md hover:bg-surface-subtle"
             >
               Clear
             </button>
@@ -678,14 +907,14 @@ NearNest Community & Society Services Team`;
         </div>
 
         {/* Categories Carousel */}
-        <div className="flex overflow-x-auto pb-2 gap-2 hide-scrollbar">
+        <div className="flex overflow-x-auto pb-1 gap-2 hide-scrollbar">
           {CATEGORIES.map(category => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`px-4 py-2 rounded-full whitespace-nowrap font-medium text-xs transition-all ${
+              className={`px-3.5 py-1.5 rounded-full whitespace-nowrap font-medium text-xs transition-all ${
                 activeCategory === category 
-                  ? "bg-text-primary text-canvas shadow-sm" 
+                  ? "bg-text-primary text-canvas shadow-sm font-semibold" 
                   : "bg-surface text-text-secondary border border-border-hairline hover:bg-surface-subtle"
               }`}
             >
@@ -695,359 +924,64 @@ NearNest Community & Society Services Team`;
         </div>
       </div>
 
-      {/* Grid */}
+      {/* STRICT CARDS GRID DISPLAY (As requested: "i want ot this type not in the map") */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {filteredProviders.map(provider => (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+            <ServiceProviderCard
               key={provider.id}
-              className="bg-surface rounded-2xl p-5 border border-border-hairline shadow-card hover:shadow-card-hover transition-shadow flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3">
-                    <img src={provider.avatar} alt={provider.name} className="w-12 h-12 rounded-full border border-border-hairline bg-surface-subtle" />
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="font-bold text-base text-text-primary">{provider.name}</h3>
-                        {provider.verified && (
-                          <span title="ID Verified Provider">
-                            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                          </span>
-                        )}
-                        {(provider as any).isCustom && (
-                          (provider as any).status === 'PENDING' ? (
-                            <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded border border-amber-300">
-                              ⏳ Pending Approval
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded">
-                              ⭐ Verified Pro
-                            </span>
-                          )
-                        )}
-                      </div>
-                      <span className="text-xs text-brand-600 font-semibold">{provider.category}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-text-secondary line-clamp-2 mb-4 leading-relaxed">
-                  {provider.speciality}
-                </p>
-
-                <div className="space-y-2 py-3 border-y border-border-hairline text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-tertiary">Estimated Rate:</span>
-                    <span className="font-bold text-text-primary">{provider.rate}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-tertiary">Experience:</span>
-                    <span className="text-text-secondary">{provider.experience}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-tertiary">Location:</span>
-                    <span className="text-text-primary flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-brand-500" />
-                      {provider.location}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-brand-600 font-medium">
-                    <span>Distance:</span>
-                    <span>{provider.distance} away</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 mt-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1 text-xs font-semibold text-amber-500">
-                  <Star size={14} className="fill-amber-400 text-amber-400" />
-                  <span>{provider.rating}</span>
-                  <span className="text-text-tertiary font-normal">({provider.reviews})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    onClick={() => openBookingModal(provider)}
-                    className="bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs py-2 px-3.5 shadow-sm"
-                  >
-                    Hire Provider
-                  </Button>
-                  {(provider as any).isCustom && (
-                    <button
-                      onClick={() => handleDeleteService(provider.id, provider.name)}
-                      className="p-2 bg-coral-50 hover:bg-coral-100 text-coral-600 rounded-xl transition-colors border border-coral-200"
-                      title="Remove from Database"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
+              provider={provider as any}
+              onDelete={handleDeleteService}
+              residentContext={{
+                name: user?.name,
+                email: user?.email,
+                phone: user?.phone,
+                society: (user as any)?.society,
+                unit: (user as any)?.unit,
+                location: activeLocationName,
+              }}
+            />
           ))}
         </AnimatePresence>
+
+        {/* Empty State when no providers in radius */}
         {filteredProviders.length === 0 && (
-          <div className="col-span-full py-16 text-center bg-surface rounded-2xl border border-border-hairline p-8">
-            <MapPin className="w-10 h-10 text-text-tertiary mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-text-primary">No service providers found for {selectedNeighborhood}</h3>
-            <p className="text-xs text-text-secondary mt-1">Try choosing another location or clearing your specialty search.</p>
-            <Button onClick={() => { setSelectedNeighborhood("All Locations"); setSearchQuery(""); setActiveCategory("All"); }} className="mt-4 text-xs">
-              Reset Filters
-            </Button>
+          <div className="col-span-full py-14 text-center bg-surface rounded-3xl border border-dashed border-border-hairline p-8 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 mx-auto flex items-center justify-center">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-text-primary">
+              No service providers found within {maxRadiusKm} km of {activeLocationName}
+            </h3>
+            <p className="text-xs text-text-secondary max-w-md mx-auto">
+              There are currently no specialists registered within this distance limit. Try expanding your radius to 5 km or 10 km.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => setMaxRadiusKm(5)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+              >
+                Expand to 5 km Radius
+              </button>
+              <button
+                onClick={() => {
+                  setMaxRadiusKm(10);
+                  setSearchQuery("");
+                  setActiveCategory("All");
+                }}
+                className="px-4 py-2 bg-surface border border-border-hairline text-text-primary hover:bg-surface-subtle rounded-xl text-xs font-semibold transition-all"
+              >
+                Expand to 10 km (City-wide)
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Booking Modal */}
-      <AnimatePresence>
-        {bookingProvider && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface rounded-3xl shadow-modal w-full max-w-lg overflow-hidden border border-border-hairline flex flex-col max-h-[92vh]"
-            >
-              <div className="p-5 border-b border-border-hairline flex justify-between items-center bg-surface-subtle shrink-0">
-                <div className="flex items-center gap-3">
-                  <img src={bookingProvider.avatar} alt={bookingProvider.name} className="w-10 h-10 rounded-full border border-border-hairline bg-surface" />
-                  <div>
-                    <h3 className="font-bold text-base text-text-primary flex items-center gap-1.5">
-                      Hire {bookingProvider.name}
-                      {bookingProvider.verified && <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
-                    </h3>
-                    <p className="text-xs text-text-secondary">{bookingProvider.category} • <span className="font-semibold text-brand-600">{bookingProvider.rate}</span></p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => { setBookingProvider(null); setBookingSuccess(false); }} 
-                  className="p-2 hover:bg-surface rounded-full transition-colors text-text-secondary"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {bookingSuccess ? (
-                <div className="p-6 space-y-4 overflow-y-auto">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
-                    <CheckCircle2 className="w-7 h-7" />
-                  </div>
-
-                  <div className="text-center space-y-1">
-                    <h4 className="text-lg font-bold text-text-primary">Booking Confirmed & Work Order Ready!</h4>
-                    <p className="text-xs text-text-secondary">
-                      Your service request has been logged in the NearNest database for <strong>{bookingProvider.name}</strong>.
-                    </p>
-                  </div>
-
-                  {/* Summary Card */}
-                  <div className="p-4 bg-canvas rounded-2xl border border-border-hairline text-xs space-y-2.5">
-                    <div className="flex justify-between items-center pb-2 border-b border-border-hairline">
-                      <span className="text-text-tertiary">Service Provider:</span>
-                      <span className="font-bold text-text-primary flex items-center gap-1.5">
-                        {bookingProvider.name} ({bookingProvider.category})
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-tertiary">Provider Gmail:</span>
-                      <span className="font-medium text-brand-600 truncate max-w-[220px]">
-                        {bookedDetails?.providerEmail || emailTo}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-tertiary">Provider Phone:</span>
-                      <span className="font-medium text-text-primary">
-                        {bookedDetails?.providerPhone || bookingProvider.phone || "+91 9373571631"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-tertiary">Scheduled Date & Time:</span>
-                      <span className="font-semibold text-text-primary">
-                        {bookedDetails?.date || bookingDate} at {bookedDetails?.time || bookingTime}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-tertiary">Society Destination:</span>
-                      <span className="font-semibold text-emerald-600">
-                        {bookedDetails?.unitAddress || bookingUnit}, {bookedDetails?.societyName || bookingSociety}
-                      </span>
-                    </div>
-                    <div className="pt-2 border-t border-border-hairline">
-                      <span className="text-text-tertiary block mb-1">Work Description:</span>
-                      <p className="p-2.5 bg-surface rounded-xl text-text-primary font-medium border border-border-hairline text-xs">
-                        {bookedDetails?.serviceRequired || bookingService}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Instructions Callout */}
-                  <div className="p-3.5 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-900/30 text-xs text-red-700 dark:text-red-300 flex items-start gap-2.5">
-                    <Mail className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-                    <div className="space-y-1">
-                      <p className="font-bold">Email Notification to Service Provider</p>
-                      <p className="text-[11px] leading-relaxed text-red-600/90 dark:text-red-300/80">
-                        Click below to open Gmail. The work order is pre-formatted, requesting the provider to come directly to your society unit premises and complete the work at the scheduled time.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Dispatch Action Buttons */}
-                  <div className="space-y-2 pt-1">
-                    <a
-                      href={gmailWebUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <span>Send Work Order via Gmail</span>
-                      <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-                    </a>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <a
-                        href={mailtoUrl}
-                        className="py-2.5 px-3 bg-surface hover:bg-surface-subtle border border-border-hairline text-text-primary rounded-xl font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <Send className="w-3.5 h-3.5 text-text-tertiary" />
-                        <span>Default Mail App</span>
-                      </a>
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>WhatsApp Alert</span>
-                      </a>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setBookingSuccess(false);
-                        setBookingProvider(null);
-                      }}
-                      className="w-full mt-2 text-xs py-2.5"
-                    >
-                      Done / Close
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleBook} className="p-5 space-y-4 overflow-y-auto">
-                  {/* Service Provider Email Callout */}
-                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-text-primary min-w-0">
-                      <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="truncate">
-                        Work request sent to: <strong className="text-emerald-700 dark:text-emerald-400">{bookingProvider?.email || `${bookingProvider?.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`}</strong>
-                      </span>
-                    </div>
-                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full shrink-0">Gmail</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-text-primary mb-1">
-                      Service Required
-                    </label>
-                    <input 
-                      required 
-                      type="text" 
-                      value={bookingService}
-                      onChange={(e) => setBookingService(e.target.value)}
-                      placeholder="e.g. Kitchen tap leaking, AC master cleaning..." 
-                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Date</label>
-                      <input 
-                        required 
-                        type="date" 
-                        value={bookingDate}
-                        onChange={(e) => setBookingDate(e.target.value)}
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Preferred Time</label>
-                      <input 
-                        required 
-                        type="time" 
-                        value={bookingTime}
-                        onChange={(e) => setBookingTime(e.target.value)}
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-text-primary mb-1">Your Address & Unit</label>
-                    <input 
-                      required 
-                      type="text" 
-                      value={bookingUnit}
-                      onChange={(e) => setBookingUnit(e.target.value)}
-                      placeholder="e.g. Block A, Apt 402, Greenfield Park" 
-                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Name</label>
-                      <input 
-                        required 
-                        type="text" 
-                        value={bookingResidentName}
-                        onChange={(e) => setBookingResidentName(e.target.value)}
-                        placeholder="e.g. Resident Name" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Your Phone / WhatsApp</label>
-                      <input 
-                        required 
-                        type="tel" 
-                        value={bookingPhone}
-                        onChange={(e) => setBookingPhone(e.target.value)}
-                        placeholder="+91 98765 43210" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <Button 
-                      type="submit" 
-                      disabled={isSubmittingBooking}
-                      className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold shadow-md text-sm flex items-center justify-center gap-2 transition-all"
-                    >
-                      {isSubmittingBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      <span>Send Hire Request</span>
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Join as Provider Modal */}
       <AnimatePresence>
         {isJoinModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1070,125 +1004,133 @@ NearNest Community & Society Services Team`;
                     <input 
                       required 
                       type="text" 
-                      value={srvName}
-                      onChange={(e) => setSrvName(e.target.value)}
-                      placeholder="e.g. Rajesh Kumar" 
-                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                      value={srvName} 
+                      onChange={e => setSrvName(e.target.value)}
+                      placeholder="e.g. Ramesh Sharma" 
+                      className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500" 
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Service Skill *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Category *</label>
                       <select 
-                        required 
-                        value={srvCategory}
-                        onChange={(e) => setSrvCategory(e.target.value)}
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary"
+                        value={srvCategory} 
+                        onChange={e => setSrvCategory(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500"
                       >
-                        {CATEGORIES.filter(c => c !== "All").map(c => (
-                          <option key={c} value={c}>{c}</option>
+                        {CATEGORIES.filter(c => c !== "All").map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Primary Neighborhood</label>
-                      <select 
-                        required 
-                        value={srvNeighborhood}
-                        onChange={(e) => setSrvNeighborhood(e.target.value)}
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary"
-                      >
-                        {NEIGHBORHOODS.filter(n => n !== "All Locations").map(n => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Neighborhood Area *</label>
+                      <input 
+                        type="text"
+                        value={srvNeighborhood} 
+                        onChange={e => setSrvNeighborhood(e.target.value)}
+                        placeholder="e.g. DY Patil University Road" 
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500"
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Hourly / Visit Rate *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Standard Rate *</label>
                       <input 
                         required 
                         type="text" 
-                        value={srvRate}
-                        onChange={(e) => setSrvRate(e.target.value)}
-                        placeholder="e.g. ₹350/hr" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                        value={srvRate} 
+                        onChange={e => setSrvRate(e.target.value)}
+                        placeholder="e.g. ₹350/hr or ₹500/visit" 
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500" 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Years Experience</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Experience *</label>
                       <input 
                         required 
                         type="text" 
-                        value={srvExperience}
-                        onChange={(e) => setSrvExperience(e.target.value)}
+                        value={srvExperience} 
+                        onChange={e => setSrvExperience(e.target.value)}
                         placeholder="e.g. 5 years" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500" 
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Contact Phone / WhatsApp *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">Direct Phone / WhatsApp *</label>
                       <input 
                         required 
                         type="tel" 
-                        value={srvPhone}
-                        onChange={(e) => setSrvPhone(e.target.value)}
+                        value={srvPhone} 
+                        onChange={e => setSrvPhone(e.target.value)}
                         placeholder="+91 98765 43210" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500 font-mono" 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-text-primary mb-1">Gmail / Email for Work Orders *</label>
+                      <label className="block text-xs font-semibold text-text-primary mb-1 flex items-center justify-between">
+                        <span>Notification Email *</span>
+                        <span className="text-[10px] text-brand-600 font-medium">Receives job requests</span>
+                      </label>
                       <input 
-                        required 
+                        required
                         type="email" 
-                        value={srvEmail}
-                        onChange={(e) => setSrvEmail(e.target.value)}
-                        placeholder="yourname@gmail.com" 
-                        className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-text-primary" 
+                        value={srvEmail} 
+                        onChange={e => setSrvEmail(e.target.value)}
+                        placeholder="e.g. your_email@gmail.com" 
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500 font-mono" 
                       />
-                      <p className="text-[10px] text-brand-600 mt-1 font-medium">When society members hire you, work requests will be delivered to this email.</p>
+                      <p className="text-[10px] text-text-tertiary mt-1">
+                        Residents will dispatch work requests & contact details to this inbox.
+                      </p>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-text-primary mb-1">Description of Experience & Tools</label>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Speciality & Services Description</label>
                     <textarea 
-                      rows={2} 
-                      value={srvSpeciality}
-                      onChange={(e) => setSrvSpeciality(e.target.value)}
-                      placeholder="Describe your background, specialty services, emergency call-outs..." 
-                      className="w-full p-2.5 bg-canvas border border-border-hairline rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-text-primary"
+                      rows={3} 
+                      value={srvSpeciality} 
+                      onChange={e => setSrvSpeciality(e.target.value)}
+                      placeholder="e.g. Master certified in home switchboards, short-circuit diagnostics, MCB tripping, and smart inverter installation." 
+                      className="w-full px-3.5 py-2 rounded-xl bg-surface-subtle border border-border-hairline text-xs text-text-primary outline-none focus:ring-2 focus:ring-brand-500 resize-none" 
                     />
                   </div>
                 </form>
               </div>
-              <div className="p-5 border-t border-border-hairline bg-surface-subtle shrink-0">
+              <div className="p-4 border-t border-border-hairline bg-surface-subtle flex justify-end gap-2 shrink-0">
+                <Button variant="outline" onClick={() => setIsJoinModalOpen(false)} className="rounded-xl text-xs">
+                  Cancel
+                </Button>
                 <Button 
                   type="submit" 
-                  form="provider-form" 
-                  disabled={isSubmittingSrv}
-                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium shadow-sm flex items-center justify-center gap-2"
+                  form="provider-form"
+                  disabled={isSubmittingSrv} 
+                  className="bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs shadow-sm"
                 >
-                  {isSubmittingSrv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={16} />}
-                  <span>Save Provider to Database</span>
+                  {isSubmittingSrv ? "Registering..." : "Submit Registration"}
                 </Button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      <EmailConfigModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        defaultEmail={user?.email || "rupeshrane3206@gmail.com"}
+      />
     </div>
   );
 }
 
 export default function ServicesPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center text-text-secondary">Loading service providers...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-text-tertiary">Loading verified services directory...</div>}>
       <ServicesContent />
-    </React.Suspense>
+    </Suspense>
   );
 }
-

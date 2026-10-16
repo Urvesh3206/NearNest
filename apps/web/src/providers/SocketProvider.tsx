@@ -25,17 +25,35 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     let newSocket: Socket;
 
     const connectSocket = async () => {
-      if (user) {
-        const token = await auth?.currentUser?.getIdToken();
+      try {
+        let token: string | undefined;
+        try {
+          token = await auth?.currentUser?.getIdToken();
+        } catch {}
+
         newSocket = io(APP_CONFIG.socketUrl, {
           auth: { token },
           reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          transports: ['websocket', 'polling'],
         });
 
-        newSocket.on('connect', () => setIsConnected(true));
+        newSocket.on('connect', () => {
+          setIsConnected(true);
+          if (typeof window !== 'undefined') {
+            (window as any).__nearnest_socket = newSocket;
+          }
+        });
+
         newSocket.on('disconnect', () => setIsConnected(false));
-        
+
         setSocket(newSocket);
+        if (typeof window !== 'undefined') {
+          (window as any).__nearnest_socket = newSocket;
+        }
+      } catch (e) {
+        console.warn('Socket connection attempt:', e);
       }
     };
 

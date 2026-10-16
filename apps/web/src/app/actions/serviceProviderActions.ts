@@ -157,7 +157,7 @@ function saveStoredProviders(list: ServiceProviderRecord[]) {
 }
 
 // Haversine formula to compute distance in km
-function calculateHaversineKm(
+export function calculateHaversineKm(
   lat1: number,
   lon1: number,
   lat2: number,

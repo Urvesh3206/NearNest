@@ -190,10 +190,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-screen overflow-hidden relative z-10">
+      <main className="flex-1 flex flex-col min-h-screen relative z-10">
 
         {/* Topbar Header */}
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-surface-glass backdrop-blur-xl border-b border-border-hairline z-30 sticky top-0">
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-surface-glass backdrop-blur-xl border-b border-border-hairline z-40 sticky top-0">
           <div className="flex items-center gap-4">
             <button className="md:hidden text-text-secondary hover:text-text-primary" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="h-6 w-6" />
