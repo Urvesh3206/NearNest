@@ -40,32 +40,114 @@ export default function ServiceDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // 1. Initial Data Loading
+  // Play two-tone doorbell chime when a new booking arrives
+  const playOrderNotificationSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      // Tone 1: High chime
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(784, now); // G5
+      gain1.gain.setValueAtTime(0.2, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // Tone 2: Ring chime
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1046.5, now + 0.15); // C6
+      gain2.gain.setValueAtTime(0.25, now + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.15);
+      osc2.stop(now + 0.7);
+    } catch (e) {}
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate([200, 100, 200]);
+      } catch (e) {}
+    }
+  };
+
+  // 1. Live Data Loading & Auto-Sync Polling (across cloud & local devices)
   useEffect(() => {
-    async function loadData() {
+    let isMounted = true;
+    let initialLoaded = false;
+
+    async function syncBookings(isInitial = false) {
       try {
         const stored = getStoredBookings();
-        setBookings(stored);
+        if (isInitial) {
+          setBookings(stored);
+        }
 
-        // Fetch from API route if available
         const res = await fetch('/api/bookings');
         if (res.ok) {
           const json = await res.json();
-          if (json.success && Array.isArray(json.bookings) && json.bookings.length > 0) {
-            // Merge unique bookings
-            const combinedMap = new Map<string, ServiceBookingRecord>();
-            json.bookings.forEach((b: ServiceBookingRecord) => combinedMap.set(b.id, b));
-            stored.forEach((b) => combinedMap.set(b.id, b));
-            setBookings(Array.from(combinedMap.values()));
+          if (json.success && Array.isArray(json.bookings)) {
+            setBookings((prev) => {
+              // Check if any new pending booking has arrived
+              const prevIds = new Set(prev.map((b) => b.id));
+              const newlyArrived = json.bookings.filter(
+                (b: ServiceBookingRecord) => !prevIds.has(b.id) && b.status === 'PENDING'
+              );
+
+              if (!isInitial && newlyArrived.length > 0) {
+                const firstNew = newlyArrived[0];
+                playOrderNotificationSound();
+                toast.success(
+                  `🔔 New Order Received from ${firstNew.residentName || 'Resident'}!`,
+                  {
+                    icon: '⚡',
+                    duration: 7000,
+                  }
+                );
+              }
+
+              // Merge
+              const combinedMap = new Map<string, ServiceBookingRecord>();
+              json.bookings.forEach((b: ServiceBookingRecord) => combinedMap.set(b.id, b));
+              stored.forEach((b) => combinedMap.set(b.id, b));
+              prev.forEach((b) => combinedMap.set(b.id, b));
+              return Array.from(combinedMap.values()).sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              );
+            });
           }
         }
       } catch (err) {
-        console.warn('Load bookings notice:', err);
+        console.warn('Booking sync notice:', err);
       } finally {
-        setLoading(false);
+        if (isInitial && isMounted) {
+          setLoading(false);
+          initialLoaded = true;
+        }
       }
     }
-    loadData();
+
+    // Initial fetch
+    syncBookings(true);
+
+    // Continuous cloud polling every 3.5s for instant multi-device order dispatch
+    const interval = setInterval(() => {
+      syncBookings(false);
+    }, 3500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // 2. Real-Time Socket.io Listener for new-booking-request & status updates
@@ -169,6 +251,7 @@ export default function ServiceDashboardPage() {
   });
 
   const pendingCount = bookings.filter((b) => b.status === 'PENDING').length;
+  const latestPendingOrder = bookings.find((b) => b.status === 'PENDING');
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -249,6 +332,48 @@ export default function ServiceDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Live Order Received Banner */}
+      {latestPendingOrder && (
+        <div className="bg-gradient-to-r from-emerald-500/15 via-brand-500/10 to-amber-500/15 border-2 border-emerald-500/50 rounded-3xl p-6 shadow-glow-brand flex flex-col md:flex-row items-start md:items-center justify-between gap-5 animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md">
+              <Zap className="w-6 h-6 animate-bounce" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                  ⚡ Order Received!
+                </span>
+                <span className="text-xs text-text-tertiary">Awaiting your response</span>
+              </div>
+              <h4 className="text-base font-bold text-text-primary mt-1">
+                {latestPendingOrder.residentName} called for {latestPendingOrder.providerCategory || 'Service'}
+              </h4>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Location: <strong>{latestPendingOrder.residentFlat}</strong> • Task: "{latestPendingOrder.taskDescription}"
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
+            <button
+              onClick={() => handleUpdateStatus(latestPendingOrder.id, 'ACCEPTED')}
+              disabled={updatingId === latestPendingOrder.id}
+              className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              <span>Accept Order</span>
+            </button>
+            <a
+              href={`tel:${latestPendingOrder.residentPhone?.replace(/[^0-9+]/g, '')}`}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-surface hover:bg-surface-subtle text-text-primary border border-border-hairline text-xs font-bold rounded-xl transition-all"
+            >
+              <Phone className="w-4 h-4 text-brand-600" />
+              <span>Call Resident</span>
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Service KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

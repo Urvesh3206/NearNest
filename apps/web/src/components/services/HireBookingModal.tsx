@@ -130,9 +130,9 @@ export function HireBookingModal({
         });
 
         // 4. Resident Success Toast
-        toast.success('Request sent to the provider', {
+        toast.success(`Order sent to ${provider.name}! Order has been received.`, {
           icon: '✅',
-          duration: 4000,
+          duration: 5000,
         });
 
         // 5. Check real email delivery vs test sandbox

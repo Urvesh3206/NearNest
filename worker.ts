@@ -68,6 +68,9 @@ export default {
       if (request.method === 'POST') {
         return handlePostBooking(request, env);
       }
+      if (request.method === 'PATCH') {
+        return handlePatchBooking(request, env);
+      }
     }
 
     // 6. /api/services/hire (Email dispatch + D1 booking record)
@@ -300,7 +303,19 @@ async function handleGetBookings(request: Request, env: Env): Promise<Response> 
 
   try {
     const { results } = await env.DB.prepare('SELECT * FROM bookings ORDER BY created_at DESC').all();
-    return new Response(JSON.stringify({ success: true, bookings: results || [], source: 'cloudflare-d1' }), { headers: CORS_HEADERS });
+    const normalized = (results || []).map((b: any) => ({
+      id: b.id,
+      providerId: b.providerId || b.provider_id || '',
+      providerName: b.providerName || b.provider_name || 'Service Provider',
+      providerCategory: b.providerCategory || b.provider_category || 'Service',
+      residentName: b.residentName || b.resident_name || 'Resident Member',
+      residentFlat: b.residentFlat || b.resident_flat || 'Society Flat',
+      residentPhone: b.residentPhone || b.resident_phone || '',
+      taskDescription: b.taskDescription || b.task_description || '',
+      status: b.status || 'PENDING',
+      createdAt: b.createdAt || b.created_at || new Date().toISOString(),
+    }));
+    return new Response(JSON.stringify({ success: true, bookings: normalized, source: 'cloudflare-d1' }), { headers: CORS_HEADERS });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err?.message }), { status: 500, headers: CORS_HEADERS });
   }
@@ -321,6 +336,27 @@ async function handlePostBooking(request: Request, env: Env): Promise<Response> 
     }
 
     return new Response(JSON.stringify({ success: true, bookingId, message: 'Booking saved in Cloudflare D1' }), { headers: CORS_HEADERS });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err?.message }), { status: 500, headers: CORS_HEADERS });
+  }
+}
+
+async function handlePatchBooking(request: Request, env: Env): Promise<Response> {
+  if (!env.DB) {
+    return new Response(JSON.stringify({ success: false, error: 'No DB' }), { status: 500, headers: CORS_HEADERS });
+  }
+
+  try {
+    const body = (await request.json()) as any;
+    const { bookingId, status } = body;
+
+    if (!bookingId || !status) {
+      return new Response(JSON.stringify({ success: false, error: 'bookingId and status required' }), { status: 400, headers: CORS_HEADERS });
+    }
+
+    await env.DB.prepare('UPDATE bookings SET status = ? WHERE id = ?').bind(status, bookingId).run();
+
+    return new Response(JSON.stringify({ success: true, message: `Booking status updated to ${status}` }), { headers: CORS_HEADERS });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err?.message }), { status: 500, headers: CORS_HEADERS });
   }
