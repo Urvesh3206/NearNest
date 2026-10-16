@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const DB_PATH = path.join(process.cwd(), 'src', 'data', 'db.json');
 
@@ -34,12 +35,38 @@ function saveDbData(data: any) {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const includeAll = searchParams.get('all') === 'true';
+
+  // 1. Try Supabase cloud database first (syncs across all devices worldwide)
+  if (isSupabaseConfigured && supabase) {
+    try {
+      let query = supabase.from('businesses').select('*').order('createdat', { ascending: false });
+      if (!includeAll) {
+        query = query.eq('status', 'APPROVED');
+      }
+      const { data: supaBusinesses, error } = await query;
+      if (!error && Array.isArray(supaBusinesses) && supaBusinesses.length > 0) {
+        const normalized = supaBusinesses.map((b: any) => ({
+          ...b,
+          priceRange: b.priceRange ?? b.pricerange ?? '₹₹',
+          coverPhoto: b.coverPhoto ?? b.coverphoto ?? '',
+          openNow: b.openNow ?? b.opennow ?? true,
+          isCustom: b.isCustom ?? b.iscustom ?? true,
+          createdAt: b.createdAt ?? b.createdat ?? new Date().toISOString(),
+        }));
+        return NextResponse.json({ success: true, businesses: normalized, source: 'supabase' });
+      }
+    } catch (supaErr) {
+      console.warn('Supabase fetch failed, falling back to local file:', supaErr);
+    }
+  }
+
+  // 2. Fallback to local db.json
   const data = getDbData();
   let businesses = data.businesses || [];
   if (!includeAll) {
     businesses = businesses.filter((b: any) => b.status === 'APPROVED');
   }
-  return NextResponse.json({ success: true, businesses });
+  return NextResponse.json({ success: true, businesses, source: 'local' });
 }
 
 export async function POST(req: Request) {
@@ -55,9 +82,8 @@ export async function POST(req: Request) {
     }
 
     const data = getDbData();
-    const isOwnerAdmin = Boolean(isAdmin) || (owner && owner.toLowerCase().includes('urvesh')) || name.toLowerCase().includes('urvesh');
-    const initialStatus = isOwnerAdmin ? 'APPROVED' : 'PENDING';
-    const isVerified = isOwnerAdmin;
+    const initialStatus = 'APPROVED';
+    const isVerified = true;
 
     const newBusiness = {
       id: `biz_custom_${Date.now()}`,
@@ -87,10 +113,32 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString(),
     };
 
+    // 1. Sync to Supabase cloud database if configured
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const dbRecord = {
+          ...newBusiness,
+          pricerange: newBusiness.priceRange,
+          coverphoto: newBusiness.coverPhoto,
+          opennow: newBusiness.openNow,
+          iscustom: newBusiness.isCustom,
+          createdat: newBusiness.createdAt,
+        };
+        const { error: insertError } = await supabase.from('businesses').insert([dbRecord]);
+        if (insertError) {
+          console.warn('Supabase insert business warning:', insertError.message);
+        } else {
+          console.log('[Supabase Cloud Sync]: Business stored successfully in Supabase!');
+        }
+      } catch (supaInsertErr) {
+        console.warn('Supabase business save error:', supaInsertErr);
+      }
+    }
+
+    // 2. Also save to local db.json
     if (!Array.isArray(data.businesses)) {
       data.businesses = [];
     }
-
     data.businesses.unshift(newBusiness);
     saveDbData(data);
 
@@ -111,6 +159,14 @@ export async function DELETE(req: Request) {
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('businesses').delete().eq('id', id);
+      } catch (supaDelErr) {
+        console.warn('Supabase delete business error:', supaDelErr);
+      }
     }
 
     const data = getDbData();

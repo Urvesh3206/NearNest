@@ -11,6 +11,7 @@ import {
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const hasFirebaseConfig = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
 
@@ -25,11 +26,13 @@ const firebaseConfig = {
 
 let appInstance: any = null;
 let authInstance: any = null;
+let dbInstance: any = null;
 
 if (hasFirebaseConfig) {
   try {
     appInstance = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     authInstance = getAuth(appInstance);
+    dbInstance = getFirestore(appInstance);
   } catch (err) {
     console.warn('Firebase client failed to initialize:', err);
   }
@@ -37,6 +40,7 @@ if (hasFirebaseConfig) {
 
 export const app = appInstance;
 export const auth = authInstance;
+export const db = dbInstance;
 
 export const signInWithGoogle = async () => {
   if (!auth) {
