@@ -130,9 +130,10 @@ export function HireBookingModal({
         });
 
         // 4. Direct Success Toast (No redirect, No external links - automated background delivery)
-        toast.success(`Order sent to ${provider.name}! Work order email dispatched directly.`, {
+        const toastMsg = emailResult?.message || `Order sent to ${provider.name}! Work order email dispatched.`;
+        toast.success(toastMsg, {
           icon: '📬',
-          duration: 5000,
+          duration: 6000,
         });
 
         if (onSuccess) {
@@ -283,13 +284,22 @@ export function HireBookingModal({
 
                 {/* Service Provider Email Field */}
                 <div className="space-y-1">
-                  <label
-                    htmlFor="providerEmail"
-                    className="block text-xs font-bold text-text-primary flex items-center gap-1.5"
-                  >
-                    <Mail className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Provider's Email</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="providerEmail"
+                      className="block text-xs font-bold text-text-primary flex items-center gap-1.5"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Provider's Email</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setProviderEmail('urveshrane3206@gmail.com')}
+                      className="text-[10px] text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline font-medium"
+                    >
+                      Use my Gmail (Test)
+                    </button>
+                  </div>
                   <input
                     id="providerEmail"
                     type="email"
