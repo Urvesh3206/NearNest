@@ -129,92 +129,11 @@ export function HireBookingModal({
           notes: taskDescription.trim(),
         });
 
-        // 4. Resident Success Toast
-        toast.success(`Order sent to ${provider.name}! Order has been received.`, {
-          icon: '✅',
+        // 4. Direct Success Toast (No redirect, No external links - automated background delivery)
+        toast.success(`Order sent to ${provider.name}! Work order email dispatched directly.`, {
+          icon: '📬',
           duration: 5000,
         });
-
-        // 5. Check real email delivery vs test sandbox
-        if (emailResult.isRealDelivery) {
-          if (emailResult.directDelivery === false) {
-            toast(
-              (t) => (
-                <div className="flex flex-col gap-1 text-xs">
-                  <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <span>⚠️ Cloud Notification Notice</span>
-                  </div>
-                  <p className="text-text-secondary">
-                    Alert dispatched to platform inbox (<strong>urveshrane3206@gmail.com</strong>).
-                  </p>
-                  {emailResult.gmailComposeUrl && (
-                    <a
-                      href={emailResult.gmailComposeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-emerald-600 font-bold hover:underline"
-                      onClick={() => toast.dismiss(t.id)}
-                    >
-                      <span>Also send directly to {targetProviderEmail} via Gmail &rarr;</span>
-                    </a>
-                  )}
-                </div>
-              ),
-              { duration: 8000, icon: '⚠️' }
-            );
-          } else {
-            toast.success(`Real email confirmation delivered directly to inboxes!`, {
-              icon: '📬',
-              duration: 6000,
-            });
-          }
-        } else {
-          const activeUrl = emailResult.residentPreviewUrl || emailResult.previewUrl;
-          if (activeUrl) {
-            toast((t) => (
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <div>
-                  <span className="font-bold block text-text-primary">Ethereal Test Sandbox Email</span>
-                  <span className="text-[11px] text-text-tertiary">To send to real inboxes, configure EMAIL_USER or Resend</span>
-                </div>
-                <a
-                  href={activeUrl as string}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2.5 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-bold transition-all shadow-sm flex items-center gap-1 shrink-0"
-                  onClick={() => toast.dismiss(t.id)}
-                >
-                  <span>View Sandbox</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            ), { duration: 12000, icon: '🧪' });
-          } else if (emailResult.gmailComposeUrl) {
-            toast(
-              (t) => (
-                <div className="flex flex-col gap-1.5 text-xs">
-                  <span className="font-bold text-text-primary">Request sent to provider!</span>
-                  <a
-                    href={emailResult.gmailComposeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 bg-emerald-600 text-white rounded font-medium inline-flex items-center gap-1 w-fit hover:bg-emerald-700 transition-colors"
-                    onClick={() => toast.dismiss(t.id)}
-                  >
-                    <span>Open in Gmail to Send Direct</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              ),
-              { duration: 7000, icon: '✉️' }
-            );
-          } else {
-            toast.success(`Booking request sent for ${provider.name}`, {
-              icon: '✉️',
-              duration: 4000,
-            });
-          }
-        }
 
         if (onSuccess) {
           onSuccess(response.booking);

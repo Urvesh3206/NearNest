@@ -29,12 +29,11 @@ export interface HireNotificationResponse {
   previewUrl?: string | false;
   residentPreviewUrl?: string | false;
   providerPreviewUrl?: string | false;
-  gmailComposeUrl?: string;
 }
 
 /**
- * Dispatches automated email notifications to both the service provider
- * and the resident when a booking request is made.
+ * Dispatches automated email notifications directly to both the service provider
+ * and the resident in the background when a booking request is made.
  */
 export async function sendHireNotification(
   providerEmail: string,
@@ -42,24 +41,12 @@ export async function sendHireNotification(
 ): Promise<HireNotificationResponse> {
   const targetEmail = providerEmail?.trim();
 
-  const residentName = residentDetails?.name || 'Resident Member';
-  const serviceCategory = residentDetails?.serviceCategory || residentDetails?.category || 'Service Request';
-  const residentLocation = residentDetails?.location || residentDetails?.society || residentDetails?.unit || residentDetails?.address || 'Greenfield Residency';
-  const taskDesc = residentDetails?.serviceRequired || residentDetails?.notes || 'Doorstep society service request';
-  const phone = residentDetails?.phone || '+91 98765 43210';
-
-  const emailSubject = `🔔 Work Order: ${residentName} called you for ${serviceCategory} (${residentLocation})`;
-  const emailBody = `Hello ${residentDetails?.providerName || 'Service Provider'},\n\nResident ${residentName} has requested your services on NearNest for ${serviceCategory}.\n\nDetails:\n- Location / Flat: ${residentLocation}\n- Phone: ${phone}\n- Work Required: ${taskDesc}\n\nPlease contact the resident directly to confirm your arrival.\n\nSent via NearNest Platform`;
-
-  const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(targetEmail || '')}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-
   try {
     if (!targetEmail || !targetEmail.includes('@')) {
       return {
         success: false,
         error: 'Invalid service provider email address.',
         message: 'Could not send request: missing or invalid provider email.',
-        gmailComposeUrl,
       };
     }
 
@@ -95,7 +82,6 @@ export async function sendHireNotification(
             previewUrl: activeUrl,
             residentPreviewUrl: data.residentPreviewUrl,
             providerPreviewUrl: data.providerPreviewUrl,
-            gmailComposeUrl,
           };
         }
       } else {
@@ -109,7 +95,6 @@ export async function sendHireNotification(
       success: true,
       isRealDelivery: false,
       message: 'Request submitted successfully!',
-      gmailComposeUrl,
     };
   } catch (err: any) {
     console.error('sendHireNotification error:', err);
@@ -117,7 +102,6 @@ export async function sendHireNotification(
       success: false,
       error: err?.message || 'Failed to dispatch email notification',
       message: 'Failed to send notification. Please try again.',
-      gmailComposeUrl,
     };
   }
 }
