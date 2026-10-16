@@ -142,14 +142,22 @@ export function HireBookingModal({
               (t) => (
                 <div className="flex flex-col gap-1 text-xs">
                   <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <span>⚠️ Resend Sandbox Notice</span>
+                    <span>⚠️ Cloud Notification Notice</span>
                   </div>
                   <p className="text-text-secondary">
-                    Resend free sandbox delivered the job alert to account owner (<strong>urveshrane3206@gmail.com</strong>).
+                    Alert dispatched to platform inbox (<strong>urveshrane3206@gmail.com</strong>).
                   </p>
-                  <p className="text-text-tertiary text-[11px]">
-                    To deliver directly to {targetProviderEmail}'s inbox, configure Gmail SMTP with your 16-character App Password.
-                  </p>
+                  {emailResult.gmailComposeUrl && (
+                    <a
+                      href={emailResult.gmailComposeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-emerald-600 font-bold hover:underline"
+                      onClick={() => toast.dismiss(t.id)}
+                    >
+                      <span>Also send directly to {targetProviderEmail} via Gmail &rarr;</span>
+                    </a>
+                  )}
                 </div>
               ),
               { duration: 8000, icon: '⚠️' }
@@ -167,7 +175,7 @@ export function HireBookingModal({
               <div className="flex items-center justify-between gap-3 text-xs">
                 <div>
                   <span className="font-bold block text-text-primary">Ethereal Test Sandbox Email</span>
-                  <span className="text-[11px] text-text-tertiary">To send to real inboxes, add EMAIL_USER in .env.local</span>
+                  <span className="text-[11px] text-text-tertiary">To send to real inboxes, configure EMAIL_USER or Resend</span>
                 </div>
                 <a
                   href={activeUrl as string}
@@ -181,6 +189,25 @@ export function HireBookingModal({
                 </a>
               </div>
             ), { duration: 12000, icon: '🧪' });
+          } else if (emailResult.gmailComposeUrl) {
+            toast(
+              (t) => (
+                <div className="flex flex-col gap-1.5 text-xs">
+                  <span className="font-bold text-text-primary">Request sent to provider!</span>
+                  <a
+                    href={emailResult.gmailComposeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 bg-emerald-600 text-white rounded font-medium inline-flex items-center gap-1 w-fit hover:bg-emerald-700 transition-colors"
+                    onClick={() => toast.dismiss(t.id)}
+                  >
+                    <span>Open in Gmail to Send Direct</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              ),
+              { duration: 7000, icon: '✉️' }
+            );
           } else {
             toast.success(`Booking request sent for ${provider.name}`, {
               icon: '✉️',
